@@ -46,7 +46,7 @@ key. (A sentence whose allophones would not fit the window has its listing cut o
 
 - `,` and `.` on their own change the speech rate (slow / medium / quick).
 - `QUIT` on its own leaves.
-- Empty line repeats the intro.
+- An empty line just asks again.
 
 ## Screenshots
 
@@ -298,6 +298,13 @@ each allophone's duration so the mouth holds a shape for as long as the sound la
 
 Speed control respreads the inter-word pauses rather than changing the allophones: measured
 at the `&FBEE` port, one test phrase takes **3.0 s** quick, **3.4 s** medium, **5.3 s** slow.
+
+There is a floor under that. Quick first mapped the between-words `PA3` to `PA1` — 10 ms —
+and 10 ms is not a gap: `I LIV IN THE C P C` came out as one run of sound, `LIV IN`
+audibly becoming *livin'*, so the sentence said the opposite of what it was changed to say.
+Quick now maps it to `PA2`, 30 ms. Between sentences, `breathe` adds three `PA5`s — 600 ms
+of silence on top of the full stop's own — because the first thing lost when a sentence
+runs into the next one is the short word that starts it.
 
 ### Memory map
 

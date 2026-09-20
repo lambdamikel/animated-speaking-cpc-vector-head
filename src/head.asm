@@ -166,7 +166,11 @@ sp_loop:
     call askline                ; then ask for another, and another
     ld a,(saylen)
     or a
-    jp z,sp_again               ; nothing typed: say the first one again
+    jp z,sp_loop                ; nothing typed: just ask again.  This used
+                                ; to say the intro over, and a key held down
+                                ; at "Press any key" repeats, so the repeat
+                                ; arrived here as an empty line and started
+                                ; the intro again - there was no way out.
     cp 1
     jr nz,sp_say0
     ld a,(saybuf)               ; a lone , or . is the speed, not a word
@@ -640,8 +644,11 @@ pausemap: defw pfast
 ;; worth a key.  Spread across 10, 50 and 200 ms a word gap instead.
 pslow:    defb 0,2,4,4,4        ; 200 ms between words
 pmid:     defb 0,1,2,3,4        ; 50 ms - what the rules asked for
-pfast:    defb 0,0,0,3,4        ; 10 ms - barely a gap at all
+pfast:    defb 0,0,1,3,4        ; 30 ms - quick, but the words still part
                                 ; PA4 and PA5 are full stops either way
+;; That 30 ms was 10 ms, and 10 ms is not a gap: "I LIV IN THE C P C" came
+;; out as one run of sound with no word in it that could be picked out.
+;; Quick is meant to be quick, not slurred - and quick is what it starts on.
 speed:    defb 2                ; 0 slow, 1 middling, 2 quick
 blinkat:  defb 12,30,48,0       ; the allophones to start one on
 
@@ -1256,7 +1263,12 @@ speakintro:
     jp speakfrom
 
 ;; two PA5s: half a second of silence, whatever the speed setting
+;; Three PA5s - 600 ms of silence on top of the full stop's own - because
+;; the sentence runs on into the next one otherwise, and the "I" of "I LIVE"
+;; is the first thing lost.
 breathe:
+    ld a,4
+    call addphon
     ld a,4
     call addphon
     ld a,4
