@@ -34,11 +34,14 @@ Boot the disc, `RUN"VH`, and the head is drawn in **0.18 seconds** (the 1985 BAS
 the CPC. Just type what you want me to say."* — while the credits sit in a text window on
 the right. Press a key and you get a prompt.
 
-Whatever you type is run through the **Naval Research Laboratory letter-to-sound rules**,
-turned into SP0256-AL2 allophones, spoken, and lip-synced: each allophone selects one of
-ten mouth shapes, the mouth is redrawn between allophones, and the head blinks two or
-three times over a long utterance. The allophones the rules produced are listed under the
-prompt so you can see what it decided to say.
+Whatever you type — up to **96 characters**, three lines of the window — is run through
+the **Naval Research Laboratory letter-to-sound rules**, turned into SP0256-AL2 allophones,
+spoken, and lip-synced: each allophone selects one of ten mouth shapes, the mouth is
+redrawn between allophones, and the head blinks two or three times over a long utterance.
+The allophones the rules produced are listed under the prompt, so you can see what it
+decided to say, and they stay on screen after it has finished speaking until you press a
+key. (A sentence whose allophones would not fit the window has its listing cut off with
+`...` rather than scrolling the head away.)
 
 - `,` and `.` on their own change the speech rate (slow / medium / quick).
 - `QUIT` on its own leaves.
@@ -51,7 +54,7 @@ prompt so you can see what it decided to say.
 | ![Credits](docs/credits.png) | ![The prompt](docs/typed.png) |
 | The credits, there to be read while it talks | The prompt, with the speed setting above it |
 | ![The allophones](docs/allophones.png) | ![Mid-utterance](docs/speaking2b.png) |
-| What the 1985 rules made of the typed sentence | Mid-utterance: lips rounded on an `OR`, mid-blink, mesh intact |
+| What the rules made of it - with the exception table at work, and staying up until a key | Mid-utterance: lips rounded on an `OR`, mid-blink, mesh intact |
 
 The ten mouth shapes, rendered from the generator exactly as the Z80 draws them:
 
@@ -243,9 +246,43 @@ the mouth on them. No init, no RSX, no ticker — only the rules.
 [`tools/dz80.py`](tools/dz80.py) (a Z80 disassembler) and [`tools/walk.py`](tools/walk.py)
 (a code walker) are what the entry points were found with.
 
-A small exception table fixes what the 1972 rules get wrong for this program's purposes —
-`HEAD` reads as `HED`, and `LIVE` as the verb (`LIV`), because the rules read it as the
-adjective and the head kept announcing that it *lifed* in the CPC.
+### The exception dictionary
+
+The 1976 rules have no exception dictionary, and English is English: they read `HEAD` as
+*heed*, `LIVE` as the adjective (which through the chip's soft V comes out *life*),
+`BROUGHT` as *braowt*, `GOODBYE` as *goo-d-b-yee*, and `DIGITIZED` as *dye-guy-tized*. So
+`head.asm` carries a table of about thirty words spelled the way they have to sound.
+
+Every entry was **measured, not guessed**. [`tools/run_words.sh`](tools/run_words.sh)
+assembles a harness around the same engine the program uses, runs it on the emulated
+machine, reads the allophones back out of memory and prints them by name:
+
+```
+$ ./run_words.sh GOODBYE BROUGHT DIGITIZED
+GOODBYE        PA2 GG1 UW2 PA2 DD1 PA2 BB1 YY1 PA1
+BROUGHT        PA2 BB1 RR2 AW PA3 TT2 PA1
+DIGITIZED      PA2 DD2 AY PA2 GG3 AY PA3 TT2 AY ZZ PA3 TT1 PA1
+
+$ ./run_words.sh "GUD BY" BRAUT "DIJJI TIZED"
+GUD BY         PA2 GG1 AX PA2 DD2 PA3 PA2 BB1 AY PA1
+BRAUT          PA2 BB1 RR2 AO PA3 TT2 PA1
+DIJJI TIZED    PA2 DD2 IH PA2 JH IH PA3 PA3 TT2 AY ZZ PA3 TT1 PA1
+```
+
+Two things fall out of doing it this way rather than by ear. A single `I` in an open
+syllable always becomes `AY`, and **doubling the consonant after it** forces the short
+vowel — which is why the table says `BILLD`, `BIZZY`, `WIMMIN` and `DIJJI`. And a
+replacement often wants to be *longer* than the word it stands for (`DIGITIZED` only comes
+out right as eleven characters), so the line is rebuilt a word at a time into a second
+buffer rather than patched where it stands, and the two lengths are free.
+
+To add a word: run it through `run_words.sh`, try respellings until the allophones are
+right, and add one line to `fixtab` in `head.asm`:
+
+```
+;       word           what to say instead
+    defb 9,11,"DIGITIZED","DIJJI TIZED"
+```
 
 ### Lip sync
 
@@ -288,6 +325,7 @@ Everything below was measured in the emulator, not estimated:
 | Intro utterance, LRQ-pipelined | **11.9 s** (−23%) |
 | XOR redraw error, per viseme | 33–61 pixels wrong — why it uses double buffering |
 | Test phrase at quick / medium / slow | 3.0 s / 3.4 s / 5.3 s |
+| Longest typed line | 96 characters, with its allophones still on the window |
 
 ## Building it
 
@@ -348,12 +386,17 @@ tools/      dz80.py       Z80 disassembler, used on the SSA-1 driver
             walk.py       code walker, used to find the driver's entry points
             reloc.asm     lets the driver relocate itself so the image can be captured
             SSA1.BIN      the 1985 Amstrad SSA-1 driver, as the engine was taken from
+            run_words.sh  what do the rules make of this word? - how every
+            nrlwords.asm    entry of the exception table was arrived at
+            mkwords.py
+            NW.BAS
 
 emu/        lay6.lua      dumps a screen page and decodes the layout
             nltrace.lua   traces every cursor move the program makes
             spdtap.lua    taps &FBEE to time allophones
             film2.lua     captures a run frame by frame
             grab_blob.lua captures the relocated driver image
+            words.lua     reads the allophones back for run_words.sh
             shots.lua     the screenshots in docs/
             meter.lua     the timings in the table above
 ```

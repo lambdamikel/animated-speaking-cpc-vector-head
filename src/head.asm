@@ -204,7 +204,11 @@ sp_say:
     call syncpages              ; the text went to the page on show only
     ld hl,phonbuf
     call speakfrom
-    jr sp_loop
+    ld hl,anykeytxt             ; what the rules made of it stays up until
+    call wrapz                  ; it has been read
+    call syncpages
+    call KM_WAIT_CHAR
+    jp sp_loop
 sp_key:
     call KM_WAIT_CHAR
     cp ' '
@@ -460,6 +464,11 @@ ds_fetch:
 ;; ---------------------------------------------------------------
 WINLEFT equ 41                  ; the text window's first column
 WINROWS equ 25                  ; the window is the full height of the screen
+SAYMAX  equ 96                  ; the longest line worth typing: any more
+                                ; and the allophones run off the window
+SAYBUFLEN equ 128               ; what was typed
+FIXBUFLEN equ 176               ; and the same after the exception table,
+FIXMAX  equ FIXBUFLEN-16        ; which can make it longer
 WINW    equ 38                  ; ... and how much of it to fill: one
                                 ; short of the edge, so the firmware never
                                 ; wraps a line itself on top of our own
@@ -853,11 +862,16 @@ speedn:   defb "slow",0,0,0,0
           defb "medium",0,0
           defb "quick",0,0,0
 
-;; The rules are the 1976 ones and have no exception dictionary, so a few
-;; words are spelled here the way they need to sound.  HEAD would rhyme
-;; with bead; LIVE comes out as the adjective, "lyve", which through the
-;; chip's soft V sounds like "life".  Each replacement is padded to the
-;; same length as the word, so nothing has to be shifted along.
+;; The rules are the 1976 ones and have no exception dictionary, so the
+;; words they get wrong are spelled here the way they have to sound.  Every
+;; one of these was measured rather than guessed: run_words.sh puts a list
+;; through the engine on the emulated machine and prints the allophones it
+;; produced, so a respelling is tried and kept only if it comes out right.
+;;
+;; An entry is the word's length, the replacement's length, the word, and
+;; what to say instead.  The two need not be the same length - DIGITIZED
+;; only comes out right as eleven characters - so the line is rebuilt a
+;; word at a time into fixbuf instead of being patched where it stands.
 fixwords:
     ld a,(saylen)               ; terminate it, so the scan knows to stop
     ld e,a
@@ -865,80 +879,163 @@ fixwords:
     ld hl,saybuf
     add hl,de
     ld (hl),0
-    ld ix,fixtab
-fw_entry:
-    ld a,(ix+0)
-    or a
-    ret z                       ; the whole table has been through
-    call fw_apply
-    ld a,(ix+0)                 ; on to the next: 1 + word + replacement
-    add a,a
-    inc a
-    ld e,a
-    ld d,0
-    add ix,de
-    jr fw_entry
-
-;; IX = one entry; replace every whole word in saybuf that matches it
-fw_apply:
     ld hl,saybuf
-fa_word:
+    ld de,fixbuf
+fx_word:
+    push hl                     ; never write past the end of what is built
+    ld hl,fixbuf+FIXMAX
+    or a
+    sbc hl,de
+    pop hl
+    jp z,fx_end
+    jp c,fx_end
     ld a,(hl)
     or a
-    ret z
+    jp z,fx_end
+    cp ' '
+    jr nz,fx_look
+    ld (de),a                   ; the spaces between words go straight out
+    inc hl
+    inc de
+    jr fx_word
+fx_look:
+    push hl                     ; HL = a word: how long is it?
+    ld c,0
+fx_len:
+    ld a,(hl)
+    or a
+    jr z,fx_gotlen
+    cp ' '
+    jr z,fx_gotlen
+    inc hl
+    inc c
+    jr fx_len
+fx_gotlen:
+    ld a,c
+    ld (fxlen),a
+    pop hl
+    ld ix,fixtab
+fx_entry:
+    ld a,(ix+0)
+    or a
+    jr z,fx_copy                ; not in the table: as it was typed
+    ld c,a
+    ld a,(fxlen)
+    cp c
+    jr nz,fx_next
     push hl
     push ix
-    ld c,(ix+0)
+    ld b,c
+    inc ix                      ; the word follows the two lengths
     inc ix
-fa_cmp:
+fx_cmp:
     ld a,(ix+0)
     cp (hl)
-    jr nz,fa_no
+    jr nz,fx_nomatch
     inc ix
     inc hl
-    dec c
-    jr nz,fa_cmp
-    ld a,(hl)                   ; and the word has to end there
-    or a
-    jr z,fa_hit
-    cp ' '
-    jr nz,fa_no
-fa_hit:
+    djnz fx_cmp
     pop ix
     pop hl
-    push hl
-    ld c,(ix+0)                 ; the replacement sits after the word
+    jr fx_hit
+fx_nomatch:
+    pop ix
+    pop hl
+fx_next:
+    ld a,(ix+0)                 ; on to the next entry
+    add a,(ix+1)
+    add a,2
+    ld c,a
+    ld b,0
+    add ix,bc
+    jr fx_entry
+
+fx_hit:
+    push hl                     ; the replacement goes out instead
+    ld a,(ix+0)
+    add a,2
+    ld c,a
     ld b,0
     push ix
-    pop de
+    pop hl
+    add hl,bc                   ; HL = what to say
+    ld b,(ix+1)
+fx_h1:
+    ld a,(hl)
+    ld (de),a
+    inc hl
     inc de
-    ex de,hl
+    djnz fx_h1
+    pop hl
+    ld a,(fxlen)                ; and the typed word is stepped over
+    ld c,a
+    ld b,0
     add hl,bc
-    ex de,hl
-    ld b,c
-fa_put:
-    ld a,(de)
-    ld (hl),a
+    jp fx_word
+
+fx_copy:
+    ld a,(fxlen)
+    ld b,a
+fx_c1:
+    ld a,(hl)
+    ld (de),a
     inc hl
     inc de
-    djnz fa_put
-    pop hl
-    jr fa_skip
-fa_no:
-    pop ix
-    pop hl
-fa_skip:
-    ld a,(hl)                   ; forward to the start of the next word
-    or a
-    ret z
-    inc hl
-    cp ' '
-    jr nz,fa_skip
-    jr fa_word
+    djnz fx_c1
+    jp fx_word
 
+fx_end:
+    xor a
+    ld (de),a
+    ld hl,fixbuf                ; back where the rules will read it, at
+    ld de,saybuf                ; whatever length it became
+    ld c,0
+fx_back:
+    ld a,(hl)
+    ld (de),a
+    or a
+    jr z,fx_done
+    inc hl
+    inc de
+    inc c
+    jr fx_back
+fx_done:
+    ld a,c
+    ld (saylen),a
+    ret
+
+;;       word           what to say instead
 fixtab:
-    defb 4,"HEAD","HED "
-    defb 4,"LIVE","LIV "
+    defb 4,3,"HEAD","HED"
+    defb 4,3,"LIVE","LIV"
+    defb 7,6,"GOODBYE","GUD BY"
+    defb 7,5,"BROUGHT","BRAUT"
+    defb 9,11,"DIGITIZED","DIJJI TIZED"
+    defb 8,10,"DIGITIZE","DIJJI TIZE"
+    defb 7,8,"DIGITAL","DIJJITUL"
+    defb 5,6,"DIGIT","DIJJIT"
+    defb 4,3,"SAID","SED"
+    defb 4,3,"SAYS","SEZ"
+    defb 4,3,"DOES","DUZ"
+    defb 6,6,"MOTHER","MUTHER"
+    defb 3,3,"WHO","HOO"
+    defb 7,7,"MACHINE","MUSHEEN"
+    defb 6,5,"FRIEND","FREND"
+    defb 5,5,"AGAIN","UGGEN"
+    defb 5,5,"GREAT","GRAYT"
+    defb 5,4,"HEART","HART"
+    defb 5,5,"BUILD","BILLD"
+    defb 4,5,"BUSY","BIZZY"
+    defb 6,5,"PEOPLE","PEEPL"
+    defb 5,6,"WOMEN","WIMMIN"
+    defb 4,4,"ONCE","WUNS"
+    defb 5,4,"WHERE","WAIR"
+    defb 7,5,"THOUGHT","THAUT"
+    defb 7,5,"THROUGH","THROO"
+    defb 6,5,"ENOUGH","INUFF"
+    defb 5,3,"LAUGH","LAF"
+    defb 7,5,"MICHAEL","MIKEL"
+    defb 9,7,"SCHNEIDER","SHNYDER"
     defb 0
 
 winhome:
@@ -1047,10 +1144,14 @@ lp_char:
     dec (hl)                    ; never split across the edge
     jr nz,lp_ok
     ld (hl),9
-    ld a,13
-    call TXT_OUTPUT
-    ld a,10
-    call TXT_OUTPUT
+    call newline
+    call TXT_GET_CURSOR         ; a very long sentence would scroll the
+    ld a,l                      ; window, which takes the head with it:
+    cp WINROWS-2                ; stop, and say that it was cut
+    jr c,lp_ok
+    pop hl
+    ld hl,moretxt
+    jp putz
 lp_ok:
     pop hl
     jr lp_next
@@ -1095,8 +1196,8 @@ pr_char:
 pr_up:
     ld e,a
     ld a,b
-    cp 40                       ; all the line has room for
-    jr nc,pr_key
+    cp SAYMAX                   ; as much as the window can show typed, with
+    jr nc,pr_key                ; its allophones underneath and a row spare
     ld a,e
     ld (hl),a
     inc hl
@@ -1181,6 +1282,7 @@ abouttxt:
     defb "Enjoy!",0
 
 anykeytxt: defb 13,13,"Press any key.",0
+moretxt:   defb "...",0
 hint1:     defb "  (, . change it)",0
 hint2:     defb "ENTER speaks.  QUIT exits.",0
 
@@ -1216,8 +1318,11 @@ fixedtxt: defb "HELLO THERE"
 saydesc:  defb 0
           defw 0
 sayparm:  defw 0
-saybuf:   defs 48
-phonbuf:  defs 320               ; the allophones SAY produced
+saybuf:   defs SAYBUFLEN         ; as long a line as the window can show
+fixbuf:   defs FIXBUFLEN         ; the same line with the exceptions in it
+fxlen:    defb 0                 ; how long the word being looked up is
+phonbuf:  defs 400              ; the allophones SAY produced - two per
+                                ; typed character is the worst the rules do
 sayend:
 saylen:   defb 0
 hooked:   defb 0
