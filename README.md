@@ -251,8 +251,13 @@ the mouth on them. No init, no RSX, no ticker — only the rules.
 
 The 1976 rules have no exception dictionary, and English is English: they read `HEAD` as
 *heed*, `LIVE` as the adjective (which through the chip's soft V comes out *life*),
-`BROUGHT` as *braowt*, `GOODBYE` as *goo-d-b-yee*, and `DIGITIZED` as *dye-guy-tized*. So
-`head.asm` carries a table of about thirty words spelled the way they have to sound.
+`BROUGHT` as *braowt*, `GOODBYE` as *goo-d-b-yee*, `DIGITIZED` as *dye-guy-tized*, and
+even `HI` as *hih*. So `head.asm` carries a table of thirty-five words spelled the way they
+have to sound.
+
+A word is what stands between anything that is not a letter, so the full stop in
+`HI THERE. HEY. BYE.` does not hide the words from the table — which it did until it was
+tested with one.
 
 Every entry was **measured, not guessed**. [`tools/run_words.sh`](tools/run_words.sh)
 assembles a harness around the same engine the program uses, runs it on the emulated
@@ -381,7 +386,7 @@ cd src && python3 preview.py ../docs/visemes.png
    Two habits of the rules save a lot of guessing: a single `I` in an open syllable always
    becomes `AY`, and doubling the consonant after it forces the short vowel (`BILLD`,
    `BIZZY`, `DIJJI`); and a replacement may contain spaces, which is often the way out
-   (`GOODBYE` → `GUD BY`).
+   (`GOODBYE` → `GUD BY`, `HIYA` → `HY YA`).
 
 3. **Add the line to `fixtab` in `src/head.asm`** — the word's length, the replacement's
    length, then both. They need not be the same length:

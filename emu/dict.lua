@@ -2,7 +2,7 @@ NK=manager.machine.natkeyboard; NK.in_use=true
 PROG=manager.machine.devices[":maincpu"].spaces["program"]
 F=0; started=nil
 local function grab(name)
-  local base=PROG:read_u8(0x9CCA)*256
+  local base=PROG:read_u8(0x9CFC)*256
   local f=io.open(os.getenv("SHOTDIR").."/"..name..".bin","wb")
   for i=0,16383 do f:write(string.char(PROG:read_u8(base+i))) end
   f:close(); print("=== "..name)
@@ -16,10 +16,10 @@ N=emu.add_machine_frame_notifier(function()
   if not started then return end
   if F==started+900 then NK:post_coded(' ') end
   if F==started+960 then
-    NK:post_coded('GOODBYE MY FRIEND I BROUGHT YOU A DIGITIZED HEAD ONCE AGAIN{ENTER}')
+    NK:post_coded('HI THERE. HEY. OH. BYE. GOODBYE{ENTER}')
   end
-  if F==started+1500 then grab("dict1") end
-  if F==started+2350 then grab("dict2") end
-  if F==started+2450 then manager.machine:exit() end
+  if F==started+1400 then grab("dict1") end
+  if F==started+2100 then grab("dict2") end
+  if F==started+2200 then manager.machine:exit() end
   if F==9000 then print("=== gave up"); manager.machine:exit() end
 end)

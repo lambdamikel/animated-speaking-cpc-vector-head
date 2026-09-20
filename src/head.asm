@@ -892,21 +892,19 @@ fx_word:
     ld a,(hl)
     or a
     jp z,fx_end
-    cp ' '
-    jr nz,fx_look
-    ld (de),a                   ; the spaces between words go straight out
-    inc hl
-    inc de
-    jr fx_word
-fx_look:
+    call isletter
+    jr c,fx_look
+    ld (de),a                   ; what is between words goes straight out,
+    inc hl                      ; so a word with a full stop after it is
+    inc de                      ; still that word - which it was not when
+    jr fx_word                  ; only a space ended one, and HEY. went
+fx_look:                        ; through untouched
     push hl                     ; HL = a word: how long is it?
     ld c,0
 fx_len:
     ld a,(hl)
-    or a
-    jr z,fx_gotlen
-    cp ' '
-    jr z,fx_gotlen
+    call isletter
+    jr nc,fx_gotlen
     inc hl
     inc c
     jr fx_len
@@ -1004,10 +1002,28 @@ fx_done:
     ld (saylen),a
     ret
 
+;; A = a character; carry set if it belongs to a word.  The prompt has
+;; already put everything into capitals.
+isletter:
+    cp 'A'
+    jr c,il_no
+    cp 'Z'+1
+    jr nc,il_no
+    scf
+    ret
+il_no:
+    or a                        ; and carry clear for everything else
+    ret
+
 ;;       word           what to say instead
 fixtab:
     defb 4,3,"HEAD","HED"
     defb 4,3,"LIVE","LIV"
+    defb 2,2,"HI","HY"                    ; "hih", without the fix
+    defb 4,5,"HIYA","HY YA"
+    defb 3,3,"HEY","HAI"
+    defb 2,3,"OH","OWE"
+    defb 3,2,"BYE","BY"
     defb 7,6,"GOODBYE","GUD BY"
     defb 7,5,"BROUGHT","BRAUT"
     defb 9,11,"DIGITIZED","DIJJI TIZED"
