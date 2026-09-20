@@ -11,7 +11,7 @@ the other half of the face is the same bytes with the bits reversed.  The
 scanline fits in a byte too, so every segment has 8-bit deltas and the
 line routine never needs a 16-bit counter.
 """
-import re, collections
+import os, re, collections
 
 A, B = 2.9, 3.0                 # line 80 of the BASIC: a=2.9 : b=3
 
@@ -23,8 +23,12 @@ MIRRORC = 39
 
 # ---------------------------------------------------------------- the head
 
+# the 1985 BASIC, wherever it is kept relative to here
+BASIC = next(p for p in ('../original/P-C-S.bas.txt', 'P-C-S.bas.txt')
+             if os.path.exists(p))
+
 toks = []
-for line in open('P-C-S.bas.txt', encoding='latin-1'):
+for line in open(BASIC, encoding='latin-1'):
     m = re.match(r'^(\d+)\s+DATA\s*(.*)$', line)
     if m and 190 <= int(m.group(1)) <= 650:
         toks += [t.strip() for t in m.group(2).split(',')]

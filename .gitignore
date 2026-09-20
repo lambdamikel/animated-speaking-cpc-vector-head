@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 rasmoutput.sym
+tools/words.inc
+tools/NRLWORDS.BIN
+src/head.dsk
+src/HEAD.BIN

@@ -21,6 +21,7 @@ with the lips, the jaw, the chin and the eyes moving on the allophones.
 - [How it works](#how-it-works)
 - [Measurements](#measurements)
 - [Building it](#building-it)
+- [Changing it](#changing-it)
 - [The toolchain](#the-toolchain)
 - [Repository layout](#repository-layout)
 - [Credits and provenance](#credits-and-provenance)
@@ -335,23 +336,130 @@ cd src
 ./dist.sh         # the above, plus the HFE for a Gotek/HxC
 ```
 
-`build.sh` runs `mkhead.py` (regenerating `headdata.inc`), assembles with rasm, and builds
-`head.dsk` with `HEAD.BIN`, `NRL.BIN` and `VH.BAS`. It greps rasm's output for
-`Write binary file`, because **rasm reports a failed assembly on stdout and still exits 0**.
+Both write into `../disk/`, replacing `HEAD.BIN`, `head.dsk` and `head.hfe` — the same
+files this repository ships, and a clean checkout rebuilds them byte for byte.
 
-`preview.py` renders the viseme sheet without going near the emulator.
+`build.sh` runs `mkhead.py` (which re-reads `original/P-C-S.bas.txt` and regenerates
+`headdata.inc`, re-checking every assertion about the mouth), assembles with rasm, and
+builds the disc with `HEAD.BIN`, `NRL.BIN` and `VH.BAS`. It greps rasm's output for
+`Write binary file`, because **rasm reports a failed assembly on stdout and still exits 0**
+— trusting the exit code means testing a stale binary.
+
+`src/tools.sh` is where the toolchain lives. Each tool is taken from the environment
+first, then `PATH`, then the place it happens to sit on the machine this was written on,
+and a missing one is named rather than failing obscurely:
+
+```
+RASM=/opt/rasm IDSK=/opt/iDSK HXCFE=/opt/hxcfe CPCROMS=~/mame/roms ./dist.sh
+```
+
+`preview.py` renders the viseme sheet without going near the emulator:
+
+```
+cd src && python3 preview.py ../docs/visemes.png
+```
+
+## Changing it
+
+### Adding a word to the dictionary
+
+1. **Ask the engine what it already does with the word.** This runs it on the emulated
+   machine, so it is the same answer the CPC will give — about half a minute a batch:
+
+   ```
+   cd tools
+   ./run_words.sh GOODBYE BROUGHT DIGITIZED
+   ```
+
+2. **Try respellings until the allophones read right.** Several at once; the allophone
+   names are in `src/allophones.txt` with the sound each one makes.
+
+   ```
+   ./run_words.sh "GUD BY" GUDBY "GUD BUY" BRAWT BRAUT BROT
+   ```
+
+   Two habits of the rules save a lot of guessing: a single `I` in an open syllable always
+   becomes `AY`, and doubling the consonant after it forces the short vowel (`BILLD`,
+   `BIZZY`, `DIJJI`); and a replacement may contain spaces, which is often the way out
+   (`GOODBYE` → `GUD BY`).
+
+3. **Add the line to `fixtab` in `src/head.asm`** — the word's length, the replacement's
+   length, then both. They need not be the same length:
+
+   ```
+   defb 9,11,"DIGITIZED","DIJJI TIZED"
+   ```
+
+4. **Rebuild and listen:**
+
+   ```
+   cd ../src && ./dist.sh
+   mame cpc6128 -flop1 ../disk/head.dsk -autoboot_delay 3 -autoboot_command 'RUN"VH\n'
+   ```
+
+   Type the sentence at the prompt. The allophones it used are listed underneath and stay
+   there until you press a key, so what the table did is on screen next to what it said.
+
+### Changing the code
+
+`src/head.asm` is the program, `src/line.asm` the line drawing, `src/mkhead.py` everything
+about the geometry — the head, the ten mouth shapes, the eye, the allophone-to-viseme map.
+Changing a mouth shape means changing `VISEMES` in the generator, not the assembler.
+
+```
+cd src
+python3 preview.py ../docs/visemes.png   # look at the shapes without the emulator
+./build.sh                               # generator assertions, then assembly
+```
+
+The generator is the first line of defence: it rasterizes every mouth shape with the same
+Bresenham the Z80 uses and **fails the build** if a lip would reach the nose or the chin,
+or if a shape would grow outside the box that gets restored. `head.asm` asserts its own
+memory map (`assert tabend < #A600`) for the same reason — three times a growing table
+quietly overwrote something, and every time it looked like a drawing bug.
+
+To see what the machine actually did, rather than what it should have done, the scripts in
+`emu/` drive MAME headlessly and read its memory:
+
+```
+cd tools
+./mame.sh cpc6128 -flop1 ../disk/head.dsk -autoboot_delay 2 -autoboot_script ../emu/shots.lua
+```
+
+| script | what it answers |
+|---|---|
+| `shots.lua` | what is on the screen at five moments of a run (writes raw 16K pages) |
+| `meter.lua` | how long the head took, how often the mouth changes while speaking |
+| `lay6.lua` | one screen page, to check a layout change |
+| `nltrace.lua` | every cursor move the program makes, in order |
+| `dict.lua` | types a sentence and captures what came back |
+| `spdtap.lua` | taps `&FBEE` to time the allophones going to the chip |
+| `words.lua` | reads the allophones back for `run_words.sh` |
+| `grab_blob.lua` | captures the relocated driver image |
+
+A screen dump is raw MODE 2 bytes, and decoding one is four lines of Python:
+
+```python
+for y in range(200):
+    row = (y & 7) * 2048 + (y >> 3) * 80
+    ...                                  # bit 7 of each byte is the leftmost pixel
+```
 
 ## The toolchain
 
-| Tool | Used for |
-|---|---|
-| [rasm](https://github.com/EdouardBERGE/rasm) 3.2.7 | Z80 assembler (`assert`, `include`, `defs`) |
-| [iDSK](https://github.com/cpcsdk/idsk) | building the `.dsk`, AMSDOS headers |
-| [hxcfe](https://hxc2001.com/) (HxC Floppy Emulator) | `.dsk` → `.hfe` for Gotek/HxC |
-| [MAME](https://www.mamedev.org/) 0.264, driver `cpc6128` | emulation, and every measurement here |
-| MAME Lua scripts | screen dumps, I/O taps, timing, automated key posting |
-| Python 3 + Pillow | the table generator, the rasterizer used for assertions, previews |
-| `xvfb-run` | MAME headless, off the desktop |
+| Tool | Used for | Pointed at by |
+|---|---|---|
+| [rasm](https://github.com/EdouardBERGE/rasm) 3.2.7 | Z80 assembler (`assert`, `include`, `defs`) | `RASM=` |
+| [iDSK](https://github.com/cpcsdk/idsk) | building the `.dsk`, AMSDOS headers | `IDSK=` |
+| [hxcfe](https://hxc2001.com/) (HxC Floppy Emulator) | `.dsk` → `.hfe` for Gotek/HxC | `HXCFE=` |
+| [MAME](https://www.mamedev.org/) 0.264, driver `cpc6128` | emulation, and every measurement here | `MAME=`, ROMs in `CPCROMS=` |
+| MAME Lua scripts | screen dumps, I/O taps, timing, automated key posting | `emu/` |
+| Python 3 + Pillow | the table generator, the rasterizer used for assertions, previews | — |
+| `xvfb-run` | MAME headless, off the desktop | `tools/mame.sh` |
+
+All four programs are looked up in that order: the environment variable, then `PATH`, then
+a default path, so `RASM=... ./build.sh` is enough to build on a machine that keeps its
+toolchain somewhere else. `src/tools.sh` holds the defaults and names whichever is missing.
 
 Two traps worth writing down, both of which cost hours:
 
@@ -368,8 +476,9 @@ src/        head.asm      the program
             headdata.inc  generated tables (head, visemes, eyes, allophone maps)
             mkhead.py     the generator: BASIC DATA -> Z80 tables, with assertions
             preview.py    renders the viseme sheet
-            build.sh      generator + rasm + iDSK
+            build.sh      generator + rasm + iDSK -> ../disk/
             dist.sh       the above + hxcfe
+            tools.sh      where the toolchain is; sourced by the other three
             VH.BAS        the loader
             allophones.txt  the SP0256-AL2 allophone set
 
@@ -382,7 +491,8 @@ original/   P-C-S.bas.txt the 1985 Locomotive BASIC program, as text
             MWSOFT2.DSK   the disc it came off
             WRATH.BAS     The Wrath of the CPC, which carries the same head DATA
 
-tools/      dz80.py       Z80 disassembler, used on the SSA-1 driver
+tools/      mame.sh       headless MAME with the CPC roms, for the emu/ scripts
+            dz80.py       Z80 disassembler, used on the SSA-1 driver
             walk.py       code walker, used to find the driver's entry points
             reloc.asm     lets the driver relocate itself so the image can be captured
             SSA1.BIN      the 1985 Amstrad SSA-1 driver, as the engine was taken from

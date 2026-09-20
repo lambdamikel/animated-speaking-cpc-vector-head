@@ -12,9 +12,9 @@
 # arrived at: a respelling is tried, not guessed.
 set -e
 cd "$(dirname "$0")"
-RASM=${RASM:-~/claude/midi80/toolchain/rasm/rasm}
-IDSK=${IDSK:-~/claude/midi80/toolchain/idsk/iDSK}
-MAME=${MAME:-../../tools/mame.sh}          # headless MAME with the CPC roms
+. ../src/tools.sh                           # RASM, IDSK, MAME, CPCROMS
+need RASM rasm
+need IDSK iDSK
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 
 python3 mkwords.py "$@" >/dev/null         # words.inc, which nrlwords.asm includes
@@ -24,7 +24,7 @@ $IDSK "$T/words.dsk" -n >/dev/null 2>&1
 $IDSK "$T/words.dsk" -i NRLWORDS.BIN -t 2 -f >/dev/null 2>&1
 $IDSK "$T/words.dsk" -i ../disk/NRL.BIN -t 2 -f >/dev/null 2>&1
 $IDSK "$T/words.dsk" -i NW.BAS -t 0 -f >/dev/null 2>&1
-OUT=$("$MAME" cpc6128 -flop1 "$T/words.dsk" -autoboot_delay 2 \
+OUT=$(./mame.sh cpc6128 -flop1 "$T/words.dsk" -autoboot_delay 2 \
         -autoboot_script ../emu/words.lua 2>&1 | grep "^=== " | head -1 | cut -c5-)
 
 python3 - "$OUT" "$@" <<'PY'
