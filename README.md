@@ -6,7 +6,10 @@ A 1985 hand-digitized wireframe head, redrawn in Z80 assembler, animated in real
 and given a voice: type any sentence and the head speaks it through the SP0256-AL2,
 with the lips, the jaw, the chin and the eyes moving on the allophones.
 
-📺 **Video:** https://youtu.be/UzU3wziq7BQ
+📺 **Videos**
+
+- [The vector head](https://youtu.be/UzU3wziq7BQ)
+- [The vector head on LambdaSpeak III](https://youtu.be/XNuESTllX0o)
 
 ![The head with the credits](docs/credits.png)
 
@@ -64,8 +67,9 @@ The ten mouth shapes, rendered from the generator exactly as the Z80 draws them:
 ## Running it
 
 **On real hardware.** You need a CPC with a disc drive and an **Amstrad SSA-1** speech
-synthesiser, or **LambdaSpeak** in SSA-1 mode. Put `disk/head.dsk` on a disc, or
-`disk/head.hfe` on a Gotek/HxC, then:
+synthesiser, or **LambdaSpeak** in SSA-1 mode — the second video above is it running on
+**LambdaSpeak III**. Put `disk/head.dsk` on a disc, or `disk/head.hfe` on a Gotek/HxC,
+then:
 
 ```
 RUN"VH
