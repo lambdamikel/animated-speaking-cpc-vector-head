@@ -72,8 +72,10 @@ RUN"VH
 ```
 
 `VH.BAS` reserves memory, loads the letter-to-sound engine low, and starts `HEAD.BIN`.
-Starting `HEAD.BIN` directly is detected and refused — it checks for the engine's
-signature first, because without it the head would draw and then speak nothing.
+**Start it with `RUN"VH`, not `RUN"HEAD`** — started directly there is no engine, so there
+is no prompt and only the one sentence built into the program can be spoken. That used to
+happen silently and looked exactly like a hang: a key repeats the sentence and nothing else
+ever comes. The program now says so on screen and tells you how to start it.
 
 The memory map fits inside 64K and nothing switches banks, so a 464 or 664 with a disc
 drive should work as well; development and all measurements here were done on an emulated

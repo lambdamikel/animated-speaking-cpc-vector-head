@@ -273,7 +273,13 @@ NAMES.update(PA1=0, PA2=1, PA3=2, PA4=3, PA5=4)
 
 # ------------------------------------------------------------ the utterance
 #
-# "Hello, I am a vectorized computer head living in the CPC!"
+# "Hello, I am a vectorized computer head.  I live in the C P C."
+#
+# This is only spoken when NRL.BIN was not loaded and there are no rules to
+# convert anything with.  It has to say what intro1 and intro2 in head.asm
+# say: it used to still say "living in the CPC", the phrase the sentence was
+# deliberately changed away from, so a machine that had not loaded the engine
+# announced the old wording and there was no way to tell that was why.
 WORDS = [
     ('Hello',      'HH1 EH LL OW'),
     ('I',          'AY'),
@@ -282,7 +288,9 @@ WORDS = [
     ('vectorized', 'VV EH KK3 TT2 ER1 AY ZZ DD1'),
     ('computer',   'KK1 AX MM PP YY1 UW2 TT2 ER1'),
     ('head',       'HH1 EH DD1'),
-    ('living',     'LL IH VV IH NG'),
+    ('.',          'PA5 PA5 PA5'),
+    ('I',          'AY'),
+    ('live',       'LL IH VV'),
     ('in',         'IH NN1'),
     ('the',        'DH1 AX'),
     ('C',          'SS IY'),

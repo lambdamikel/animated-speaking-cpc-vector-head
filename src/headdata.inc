@@ -723,7 +723,9 @@ utter:
     defb 35,7,8,13,51,6,43,21,2   ; vectorized
     defb 42,15,16,9,49,31,13,51,2   ; computer
     defb 27,7,21,2   ; head
-    defb 45,12,35,12,44,2   ; living
+    defb 4,4,4,2   ; .
+    defb 6,2   ; I
+    defb 45,12,35,2   ; live
     defb 12,11,2   ; in
     defb 18,15,2   ; the
     defb 55,19,2   ; C

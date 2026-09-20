@@ -148,6 +148,12 @@ restart:
     call wrapz
     call syncpages              ; on both pages, or the first flip of the
                                 ; mouth would take them away again
+    ld a,(hooked)               ; Without the engine there is no prompt and
+    or a                        ; only the one sentence built in, and that
+    jr nz,sp_again              ; looked exactly like the program hanging:
+    ld hl,nonrltxt              ; a key repeats the sentence and nothing
+    call wrapz                  ; else ever happens.  Say so.
+    call syncpages
 sp_again:
     call speakintro
     ld a,(firstrun)             ; the credits are on screen: give them a
@@ -643,12 +649,16 @@ pausemap: defw pfast
 ;; step apart, quick and medium came out 3.0 s and 3.2 s - no difference
 ;; worth a key.  Spread across 10, 50 and 200 ms a word gap instead.
 pslow:    defb 0,2,4,4,4        ; 200 ms between words
-pmid:     defb 0,1,2,3,4        ; 50 ms - what the rules asked for
+pmid:     defb 0,1,3,3,4        ; 100 ms
 pfast:    defb 0,0,1,3,4        ; 30 ms - quick, but the words still part
                                 ; PA4 and PA5 are full stops either way
 ;; That 30 ms was 10 ms, and 10 ms is not a gap: "I LIV IN THE C P C" came
 ;; out as one run of sound with no word in it that could be picked out.
 ;; Quick is meant to be quick, not slurred - and quick is what it starts on.
+;; Raising it put quick 0.7 s from medium, though, which is the complaint the
+;; three settings were spread out to answer in the first place, so medium
+;; moved up to 100 ms to keep the steps worth a key: measured over the whole
+;; intro, 19.1 / 21.3 / 24.6 seconds.
 speed:    defb 2                ; 0 slow, 1 middling, 2 quick
 blinkat:  defb 12,30,48,0       ; the allophones to start one on
 
@@ -1310,6 +1320,12 @@ abouttxt:
     defb "Enjoy!",0
 
 anykeytxt: defb 13,13,"Press any key.",0
+nonrltxt:
+    defb 13,13,"NRL.BIN was not loaded, so there is no "
+    defb "prompt and only the sentence built in "
+    defb "here can be spoken.",13,13
+    defb "Start it with RUN",34,"VH - not HEAD.BIN.",13,13
+    defb "SPACE says it again.  Q quits.",0
 moretxt:   defb "...",0
 hint1:     defb "  (, . change it)",0
 hint2:     defb "ENTER speaks.  QUIT exits.",0
