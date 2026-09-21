@@ -377,7 +377,12 @@ mx = max(max(abs(screen(*b)[0] - screen(*a)[0]), abs(screen(*b)[1] - screen(*a)[
          for a, b in zip(p, p[1:]))
 assert mx < 256, mx
 
+# the vertex count the README quotes against Parke's ~400, printed here so
+# the claim stays tied to the DATA rather than to a number someone typed
+_verts = {(x, y) for p in polys for x, y in p}
 print(f'head   {len(static)} chains, {cost(static)} pixels per half')
+print(f'       {len(polys)} digitized polylines, {len(_verts)} distinct vertices '
+      f'({len(_verts) * 2} mirrored)')
 for label, states in (('mouth', shapes[0]), ('eye', shapes[1])):
     c0, c1, r0, r1 = box(states)
     px = max(cost(st) for st in states)

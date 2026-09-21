@@ -103,11 +103,18 @@ on his Schneider CPC 464, `P-C-S.BAS` — *Polygon Cracking Service* — which d
 one `DATA` polyline at a time, mirroring the digitized half to make the other. It has been
 the LambdaMikel logo ever since, and it later appeared in *The Wrath of the CPC*.
 
-The face itself goes back to **Frederick I. Parke**, *"Computer Generated Animation of
-Faces"* (University of Utah, 1972) — the digitized head made in the same lab and the same
+The face itself goes back to **Frederick I. Parke**, *"Computer generated animation of
+faces"* (University of Utah, 1972) — the digitized head made in the same lab and the same
 years as Ed Catmull's *"A Computer Animated Hand"*. It is the ancestor of every talking
 wireframe face in computer graphics, which makes it a fitting thing to finally make talk on
 an 8-bit micro.
+
+And the hand-digitizing was better than it had any right to be. Parke's paper reports the
+face approximated with about 250 polygons on roughly **400 vertices**. Count what came off
+the tracing paper — the generator parses it straight out of the `DATA` statements — and the
+digitized half holds **186 distinct vertices** across 47 polylines, which mirrors to about
+**372 for the whole face**. Within about 7% of the original model, read off a printed
+picture by eye, by a teenager, with no way to check the answer.
 
 Forty years on, this repository is the Z80 port: the same hand-read coordinates, the same
 head, now drawn seventy times faster, animated, and speaking.
@@ -531,8 +538,14 @@ emu/        lay6.lua      dumps a screen page and decodes the layout
 
 ## Credits and provenance
 
-- The head: **F. I. Parke**, *"Computer Generated Animation of Faces"*, University of Utah,
-  1972 — digitized by hand off a *P.M. Computerheft* article by **Michael Wessel** in 1985.
+- The head: **F. I. Parke**, *"Computer generated animation of faces"*, Proceedings of the
+  ACM Annual Conference, 1972 — [doi:10.1145/800193.569955](https://dl.acm.org/doi/10.1145/800193.569955),
+  [ACM SIGGRAPH History Archives](https://history.siggraph.org/person/frederic-i-parke/),
+  [Wikipedia](https://en.wikipedia.org/wiki/Frederic_Parke). Digitized by hand off a
+  *P.M. Computerheft* article by **Michael Wessel** in 1985.
+
+  No figure from that paper, or frame of the film, is reproduced here: they are not ours to
+  republish. The links go to the work itself, which is the better destination anyway.
 - The 1985 BASIC, the digitization, and *The Wrath of the CPC*: **Michael Wessel
   (LambdaMikel)**.
 - The Z80 port, the animation, the speech integration and this README: **Claude Code**
