@@ -552,11 +552,20 @@ emu/        lay6.lua      dumps a screen page and decodes the layout
   (Claude Opus 5), 2026, working with Michael.
 - **LambdaSpeak**: https://github.com/lambdamikel/LambdaSpeak
 
-⚠️ **Third-party code.** `tools/SSA1.BIN` and the `disk/NRL.BIN` derived from it are the
-1985 **Amstrad SSA-1 speech driver** — third-party code, included here for provenance and
-because the program runs its letter-to-sound rules directly. This repository is **private**.
-Before making it public, settle the licensing of those two files (or ship only the
-extraction recipe in `tools/reloc.asm`, which reproduces `NRL.BIN` from a driver the user
-supplies).
+## Licence
+
+Everything written for this project is **GPL-3** — see [`LICENSE`](LICENSE).
+
+⚠️ **Two files are not ours.** `tools/SSA1.BIN` and the `disk/NRL.BIN` derived from it are
+the 1985 **Amstrad SSA-1 speech driver**, © 1985 Amstrad plc, included for provenance and
+because the program calls its letter-to-sound rules directly as a subroutine. The built
+discs `disk/head.dsk` and `disk/head.hfe` contain `NRL.BIN` as well.
+[`LICENSE-NOTE.md`](LICENSE-NOTE.md) says exactly what is and is not covered, on what
+basis those files are here, and how to build without them — `tools/reloc.asm` reproduces
+`NRL.BIN` from a driver you supply yourself.
+
+The *rules* the driver implements are the NRL letter-to-sound rules (NRL Report 7948,
+1976), a US Government work and therefore free to implement. Only Amstrad's 1985
+expression of them is not.
 
 © 2026 Michael Wessel (LambdaMikel) & Claude.
