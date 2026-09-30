@@ -5,3 +5,8 @@ tools/words.inc
 tools/NRLWORDS.BIN
 src/head.dsk
 src/HEAD.BIN
+
+# The 1985 Amstrad SSA-1 driver is not ours to ship -- see LICENSE-NOTE.md.
+# tools/extract_nrl.sh makes this from a driver you download yourself.
+disk/NRL.BIN
+tools/SSA1.BIN

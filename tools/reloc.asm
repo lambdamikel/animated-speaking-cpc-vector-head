@@ -2,11 +2,12 @@
 ;; address instead of relocating itself at run time: put the file at the
 ;; address it will live at, let its own relocator run once here, and take
 ;; the result away as a blob.
-DRVBASE equ #0200
+DRVBASE equ #0200               ; where the driver must end up fixed
+DRVSRC  equ #4000               ; and where we are handed it, and hand it back
     org #8000
     jp start
 start:
-    ld hl,#2000                 ; where BASIC put the file
+    ld hl,DRVSRC                ; the raw file, put there by the harness
     ld de,DRVBASE
     ld bc,6016
     ldir
@@ -19,8 +20,8 @@ start:
     push de
     jp (hl)
 back:
-    ld hl,DRVBASE               ; hand the relocated copy up above #4000,
-    ld de,#4000                 ; where the emulator can actually read it:
+    ld hl,DRVBASE               ; hand the relocated copy back above #4000,
+    ld de,DRVSRC                ; where the emulator can actually read it:
     ld bc,6016                  ; below that it sees the lower ROM
     ldir
     ld a,#AA

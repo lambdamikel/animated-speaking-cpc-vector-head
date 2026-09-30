@@ -1,11 +1,38 @@
-# What is and is not covered by the licence
+# What is and is not in this repository
 
-The short version: **everything written for this project is GPL-3. Two files
-are not ours and are not GPL**, and one piece of prior art is cited rather
-than reproduced. This note says which is which, because a repository that
-ships a 1985 binary should be explicit about it rather than quiet.
+**Everything here is GPL-3 and ours.** No third-party binary is shipped. That
+takes one step to set up and is worth the step.
 
-## GPL-3: everything written for this project
+## The 1985 Amstrad driver is not here
+
+The program speaks typed English by calling the **NRL letter-to-sound rules**
+as a subroutine, and the copy of those rules it uses is the one inside
+Amstrad's 1985 **SSA-1 speech driver**. That driver is © 1985 Amstrad plc.
+It is not ours to redistribute, so it is not in this repository, in any file,
+including the disc images.
+
+Get it yourself — it is one download:
+
+```sh
+# https://www.cpcwiki.eu/imgs/6/65/SSA-1.zip
+tools/extract_nrl.sh ~/Downloads/SSA-1.zip     # writes disk/NRL.BIN
+src/dist.sh                                    # and now the disc has the rules
+```
+
+`tools/extract_nrl.sh` is ours. It takes the driver, lets it relocate itself
+**once** inside an emulator for a fixed base of `&0200`, and takes the result
+away — `tools/reloc.asm` does the relocation, `emu/grab_blob.lua` drives it.
+The driver is self-relocating and will not sit still otherwise; that is the
+whole reason this is a script and not a `cp`.
+
+**Without it the program still builds and still runs.** `src/build.sh` puts a
+zero-filled `NRL.BIN` on the disc instead, the head checks for `PUSH AF` at
+`NRLLOAD+&0BB8` before hooking the rules, finds zeros, and says so on screen:
+*"NRL.BIN was not loaded, so there is no prompt and only the sentence built in
+here can be spoken."* The head still draws, still animates, still speaks its
+built-in line.
+
+## GPL-3: everything else
 
 © 2026 Michael Wessel (LambdaMikel) and Claude, under the GPL-3 in
 [`LICENSE`](LICENSE) — the same licence as LambdaSpeak.
@@ -14,68 +41,31 @@ ships a 1985 binary should be explicit about it rather than quiet.
 |---|---|
 | `src/head.asm`, `src/line.asm`, `src/headdata.inc` | the Z80 program |
 | `src/mkhead.py`, `src/preview.py`, `src/build.sh`, `src/dist.sh` | the build |
-| `tools/dz80.py`, `tools/walk.py`, `tools/reloc.asm`, `tools/mkwords.py`, `tools/nrlwords.asm` | the disassembler and the extraction recipe |
-| `emu/*.lua`, `tools/*.sh` | the emulator harness |
-| `disk/HEAD.BIN` | built from the above |
+| `tools/extract_nrl.sh`, `tools/reloc.asm` | getting the rules out of a driver you own |
+| `tools/dz80.py`, `tools/walk.py`, `tools/mkwords.py`, `tools/nrlwords.asm` | the disassembler and the word harness |
+| `emu/*.lua` | the emulator harnesses |
+| `disk/HEAD.BIN`, `disk/head.dsk`, `disk/head.hfe` | built from the above, and checked to contain none of the driver |
 | `README.md`, `docs/*.png` | the write-up and its screenshots |
 | `original/` | Michael's 1985 BASIC and the digitised head data |
-
-The head geometry itself was digitised by hand by Michael in 1985, off a
-*P.M. Computerheft* article. That work is his.
-
-## Not ours: the 1985 Amstrad SSA-1 driver
-
-**`tools/SSA1.BIN`** is the 1985 Amstrad SSA-1 speech driver.
-**`disk/NRL.BIN`** is that same driver, relocated to `&0200` and with one
-flag cleared, as [`tools/reloc.asm`](tools/reloc.asm) describes.
-**`disk/head.dsk`** and **`disk/head.hfe`** are built discs and therefore
-contain `NRL.BIN` too.
-
-> **© 1985 Amstrad plc. Not covered by the GPL-3 above.** Amstrad retains
-> copyright. These files are included unmodified in substance, for
-> provenance and because the program calls the driver's letter-to-sound
-> rules directly as a subroutine.
-
-They are here on the same preservation basis the Amstrad CPC archives have
-used for decades: the SSA-1 driver has been openly distributed by
-[CPCWiki](https://cpcwiki.eu/index.php?title=Amstrad_SSA-1_Speech_Synthesizer)
-and [CPCrulez](https://cpcrulez.fr/applications_music-amstrad_ssa-1_speech_synthesizer_software.htm)
-— cassette dumps, DSK drivers for emulators, and manual scans — for many
-years. Nothing here is sold, and no copyright notice has been altered.
-
-**Being precise about the permission, because it is often overstated.**
-Amstrad and Locomotive Software have granted permission for the CPC **ROMs**
-to be distributed with emulators — Cliff Lawson for Amstrad's BASIC ROM,
-Richard Clayton for Locomotive's firmware ROM — both retaining copyright.
-That is a real permission, and it is *not* this file: the SSA-1 driver is
-peripheral software that shipped on cassette with the hardware, and we know
-of no specific grant covering it. It is published here as preservation of a
-1985 peripheral driver, not under a licence we can point at.
-
-**If Amstrad or a successor in title would rather it were not here, say so
-and it goes**, and the program will still build: `tools/reloc.asm` and
-`emu/grab_blob.lua` reproduce `NRL.BIN` from a driver you supply yourself.
 
 ## Cited, not reproduced: Parke's head
 
 The wireframe descends from F. I. Parke, *"Computer generated animation of
 faces"*, ACM Annual Conference 1972
 ([doi:10.1145/800193.569955](https://dl.acm.org/doi/10.1145/800193.569955)).
-**No figure from that paper and no frame of the film is reproduced here.**
-The links go to the work itself. What is in `original/` is Michael's own
-1985 digitisation.
+**No figure from that paper and no frame of the film is reproduced here.** The
+links go to the work itself. What is in `original/` is Michael's own 1985
+digitisation, done by hand off a *P.M. Computerheft* article.
 
-## Public domain: the letter-to-sound rules themselves
+## Public domain: the rules themselves
 
 The algorithm the driver implements is the **NRL letter-to-sound rules** —
-Elovitz, Johnson, McHugh and Shore, *Automatic Translation of English Text
-to Phonetics by Means of Letter-to-Sound Rules*, NRL Report 7948, 1976
+Elovitz, Johnson, McHugh and Shore, *Automatic Translation of English Text to
+Phonetics by Means of Letter-to-Sound Rules*, NRL Report 7948, 1976
 ([DTIC](https://apps.dtic.mil/sti/pdfs/ADA021929.pdf)). A work of the US
-Government, so **the rules are free to implement**; only Amstrad's 1985
-*expression* of them is not.
+Government: **the rules are free to implement.** Only Amstrad's 1985
+expression of them is not, which is the entire reason for the download.
 
-That distinction is the way out of this whole section. A clean
-implementation of the NRL rules — there are public-domain ones, including
-Wasser's 1985 C version — would let this program drop `NRL.BIN` entirely.
-That is planned for LambdaSpeak 4's `|SAYSPO`, and this program could then
-use it.
+A clean implementation — there are public-domain ones, including Wasser's 1985
+C version — would remove the download too. That is planned for LambdaSpeak 4's
+`|SAYSPO`, and this program could then use it instead.

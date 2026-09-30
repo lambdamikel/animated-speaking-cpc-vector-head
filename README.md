@@ -239,12 +239,17 @@ That is harder than it sounds, because the driver is not a library:
   pieces,
 - and it wants to own the machine.
 
-The solution was to extract the engine. [`tools/reloc.asm`](tools/reloc.asm) plus
+The solution was to extract the engine. [`tools/extract_nrl.sh`](tools/extract_nrl.sh)
+does it in one command: [`tools/reloc.asm`](tools/reloc.asm) plus
 [`emu/grab_blob.lua`](emu/grab_blob.lua) let the driver relocate itself **once** inside the
-emulator, for a load address of `&0200`, and capture the resulting 6016-byte image as
-[`disk/NRL.BIN`](disk/NRL.BIN) (with a hand-built AMSDOS header — a headerless binary
-`LOAD`ed from BASIC is read as BASIC text and gives *Syntax error*). The interrupt-ticker
-flag at driver offset `&0844` is cleared in the image, so nothing starts.
+emulator, for a load address of `&0200`, and capture the result as `disk/NRL.BIN` (with a
+hand-built AMSDOS header — a headerless binary `LOAD`ed from BASIC is read as BASIC text
+and gives *Syntax error*).
+
+Two details the script has to get right. The driver's own header says **5170 bytes**; the
+file is 6016 because that is what came off the disc, and after relocation the last 846
+bytes are whatever was in RAM, so they are zeroed or the output is not reproducible. And
+the interrupt-ticker flag at driver offset `&0844` is cleared, so nothing starts.
 
 At run time the program checks the signature, copies the image to `&0200`, and writes a
 `JP sayhook` over the routine at `NRLBASE+&00D8` that used to hand an allophone to the
@@ -366,7 +371,8 @@ files this repository ships, and a clean checkout rebuilds them byte for byte.
 
 `build.sh` runs `mkhead.py` (which re-reads `original/P-C-S.bas.txt` and regenerates
 `headdata.inc`, re-checking every assertion about the mouth), assembles with rasm, and
-builds the disc with `HEAD.BIN`, `NRL.BIN` and `VH.BAS`. It greps rasm's output for
+builds the disc with `HEAD.BIN`, `NRL.BIN` (or a zero-filled stand-in, if you have not
+run `tools/extract_nrl.sh`) and `VH.BAS`. It greps rasm's output for
 `Write binary file`, because **rasm reports a failed assembly on stdout and still exits 0**
 — trusting the exit code means testing a stale binary.
 
@@ -510,7 +516,8 @@ src/        head.asm      the program
 disk/       head.dsk      ready to run
             head.hfe      the same, for a Gotek or HxC
             HEAD.BIN      the assembled program (AMSDOS header, loads at #8000)
-            NRL.BIN       the extracted letter-to-sound engine (relocated for #0200)
+            NRL.BIN       the extracted letter-to-sound engine (relocated for
+                          #0200) - NOT in this repository; tools/extract_nrl.sh
 
 original/   P-C-S.bas.txt the 1985 Locomotive BASIC program, as text
             MWSOFT2.DSK   the disc it came off
@@ -519,8 +526,8 @@ original/   P-C-S.bas.txt the 1985 Locomotive BASIC program, as text
 tools/      mame.sh       headless MAME with the CPC roms, for the emu/ scripts
             dz80.py       Z80 disassembler, used on the SSA-1 driver
             walk.py       code walker, used to find the driver's entry points
+            extract_nrl.sh  makes disk/NRL.BIN from an SSA-1 driver you download
             reloc.asm     lets the driver relocate itself so the image can be captured
-            SSA1.BIN      the 1985 Amstrad SSA-1 driver, as the engine was taken from
             run_words.sh  what do the rules make of this word? - how every
             nrlwords.asm    entry of the exception table was arrived at
             mkwords.py
@@ -554,18 +561,24 @@ emu/        lay6.lua      dumps a screen page and decodes the layout
 
 ## Licence
 
-Everything written for this project is **GPL-3** — see [`LICENSE`](LICENSE).
+**GPL-3, and everything here is ours** — see [`LICENSE`](LICENSE).
 
-⚠️ **Two files are not ours.** `tools/SSA1.BIN` and the `disk/NRL.BIN` derived from it are
-the 1985 **Amstrad SSA-1 speech driver**, © 1985 Amstrad plc, included for provenance and
-because the program calls its letter-to-sound rules directly as a subroutine. The built
-discs `disk/head.dsk` and `disk/head.hfe` contain `NRL.BIN` as well.
-[`LICENSE-NOTE.md`](LICENSE-NOTE.md) says exactly what is and is not covered, on what
-basis those files are here, and how to build without them — `tools/reloc.asm` reproduces
-`NRL.BIN` from a driver you supply yourself.
+The program speaks typed English by calling the NRL letter-to-sound rules as
+a subroutine, and the copy it uses lives inside Amstrad's 1985 **SSA-1
+driver**. That is © 1985 Amstrad plc and **is not in this repository**, in
+any file, including the disc images. One download and one script:
 
-The *rules* the driver implements are the NRL letter-to-sound rules (NRL Report 7948,
-1976), a US Government work and therefore free to implement. Only Amstrad's 1985
-expression of them is not.
+```sh
+# https://www.cpcwiki.eu/imgs/6/65/SSA-1.zip
+tools/extract_nrl.sh ~/Downloads/SSA-1.zip     # writes disk/NRL.BIN
+src/dist.sh                                    # rebuilds the disc with it
+```
+
+Without it the program still builds and runs — it says so on screen and
+speaks only its built-in line. [`LICENSE-NOTE.md`](LICENSE-NOTE.md) has the
+detail.
+
+The *rules* are NRL Report 7948 (1976), a US Government work and free to
+implement; only Amstrad's 1985 expression of them is not.
 
 © 2026 Michael Wessel (LambdaMikel) & Claude.
