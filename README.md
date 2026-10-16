@@ -13,6 +13,15 @@ with the lips, the jaw, the chin and the eyes moving on the allophones.
 
 ![The head with the credits](docs/credits.png)
 
+**There is an Apple II version.** The same head, the same ten mouth shapes and
+the same three eyelid states, speaking through
+[Perfect Paul \]\[](https://github.com/lambdamikel/perfect-paul-ii) — a Raspberry
+Pi Pico card running an emulated SP0256-AL2. It cannot poll `LRQ` the way this
+one does, because that card's slot is write-only, so the sync is open loop off
+durations measured out of the emulation, and the NRL rules had to be ported to
+the 6502 so the Apple II knows what the card is about to say. See
+[The vector head](https://github.com/lambdamikel/perfect-paul-ii#the-vector-head).
+
 ---
 
 ## Contents
@@ -555,6 +564,8 @@ emu/        lay6.lua      dumps a screen page and decodes the layout
   republish. The links go to the work itself, which is the better destination anyway.
 - The 1985 BASIC, the digitization, and *The Wrath of the CPC*: **Michael Wessel
   (LambdaMikel)**.
+- The Apple II port, which reuses `src/mkhead.py` whole and changes only the
+  target: **[Perfect Paul \]\[](https://github.com/lambdamikel/perfect-paul-ii)**.
 - The Z80 port, the animation, the speech integration and this README: **Claude Code**
   (Claude Opus 5), 2026, working with Michael.
 - **LambdaSpeak**: https://github.com/lambdamikel/LambdaSpeak
