@@ -37,9 +37,13 @@
 ;; neither they nor the ROM built from them belong in this repository.
 
 HEAD_ORG         equ #8000
-HEAD_LEN         equ #1DD3           ; 7635, from HEAD.BIN's own header
 NRL_ORG          equ #2000
-NRL_LEN          equ #1780           ; 6016, likewise
+
+;; The lengths are measured from the images themselves rather than written
+;; down. They were constants taken from the .BIN headers, and correcting a
+;; line of the credits grew the head by 36 bytes -- which a hard-coded #1DD3
+;; would have copied short, silently, leaving the last 36 bytes of the program
+;; as whatever was in RAM.
 
 ;; Above the head's last byte (#9DD2) and below AMSDOS's workspace (~#A700).
 STUB_AT          equ #9E00
@@ -69,12 +73,12 @@ names:
 vh:
     ld hl,nrl_img                    ; the rules
     ld de,NRL_ORG
-    ld bc,NRL_LEN
+    ld bc,nrl_end-nrl_img
     ldir
 
     ld hl,head_img                   ; and the head
     ld de,HEAD_ORG
-    ld bc,HEAD_LEN
+    ld bc,head_end-head_img
     ldir
 
     ld hl,ramstub                       ; and the three instructions that can
@@ -96,8 +100,13 @@ ramstub_end:
 
 nrl_img:
     incbin "NRL.RAW"
+nrl_end:
 head_img:
     incbin "HEAD.RAW"
+head_end:
+
+;; A ROM that does not fit is worth hearing about at build time.
+    assert $-#C000 <= #4000
 
     defs #4000-($-#C000),#FF         ; a ROM is 16 KB whether it needs to be
 

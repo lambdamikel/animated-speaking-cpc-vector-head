@@ -1315,8 +1315,9 @@ abouttxt:
     defb "has been the LambdaMikel logo ever since.",13,13
     defb "40 years on, Claude Code animated it and "
     defb "gave it a voice, through the Amstrad SSA-1 "
-    defb "or LambdaSpeak. Text-to-speech for the "
-    defb "SP0256-AL2 adapted from the SSA-1 driver. "
+    defb "or LambdaSpeak. Letter-to-sound: the Navy's "
+    defb "public-domain NRL rules (1976), as "
+    defb "implemented in Amstrad's 1985 driver. "
     defb "Enjoy!",0
 
 anykeytxt: defb 13,13,"Press any key.",0
