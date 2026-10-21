@@ -1,4 +1,11 @@
+# VH.ROM carries Amstrad's 1985 letter-to-sound engine, which is not ours to
+# pass on -- see ../LICENSE-NOTE.md. Neither it nor the rules it is built from
+# belong in this repository.
 VH.ROM
-*.RAW
 NRL.BIN
+*.RAW
 rasmoutput.sym
+
+# VHLSAI.ROM is deliberately NOT ignored. It contains none of that engine --
+# it asks the card instead -- so it is ours end to end and is tracked, like
+# the disc images, as a built artefact anyone can use.

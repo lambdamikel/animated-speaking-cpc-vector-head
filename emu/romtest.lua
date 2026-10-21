@@ -17,7 +17,7 @@ N=emu.add_machine_frame_notifier(function()
     print(string.format("=== #2BB8 = %02X  (installnrl wants F5)",
                         PROG:read_u8(0x2BB8)))
   end
-  if sent and F==sent+230 and not done then
+  if sent and F==sent+330 and not done then
     done=1
     local f=io.open(os.getenv("DUMP"),"wb")
     for i=0,16383 do f:write(string.char(PROG:read_u8(0xC000+i))) end

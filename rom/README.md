@@ -6,8 +6,29 @@ answers upper-ROM reads out of flash, so it needs no ROM board -- but it is an
 ordinary CPC ROM and a real ROM box will run it.
 
 ```
-    ./build.sh            # needs NRL.BIN; see below
+    LSAI=1 ./build.sh     # VHLSAI.ROM -- publishable, needs LambdaSpeak AI
+    NRL=/path/to/NRL.BIN ./build.sh   # VH.ROM -- runs anywhere
 ```
+
+## Two builds
+
+|  | `VH.ROM` | `VHLSAI.ROM` |
+| --- | --- | --- |
+| letter-to-sound | Amstrad's 1985 engine, in the ROM | asked of the card, `&E9` |
+| size used | 13,740 of 16,384 | **7,760** |
+| runs on | any CPC with any SP0256 card | LambdaSpeak AI |
+| redistributable | **no** | **yes** |
+
+`VHLSAI.ROM` carries none of Amstrad's driver -- checked by searching it for
+323 distinctive 32-byte runs of the 1985 engine and finding none, where
+`VH.ROM` contains all of them. The rules it uses instead are the same Naval
+Research Laboratory rules, reimplemented on the card from the 1976 report.
+
+On hardware that does not answer `&E9` -- a real SSA-1, say -- the LambdaSpeak
+build degrades rather than hanging: the probe times out after about a quarter
+of a second, and the head draws, speaks its built-in sentence and says there is
+no prompt, exactly as the classic build does without `NRL.BIN`. Verified in
+MAME against MAME's own SSA-1.
 
 **The rules are not here and neither is the built ROM.** `VH.ROM` contains the
 1985 NRL letter-to-sound rules, which are © 1985 Amstrad plc and not ours to

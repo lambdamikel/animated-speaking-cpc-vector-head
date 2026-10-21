@@ -58,12 +58,14 @@ KL_FIND_COMMAND equ #BCD1       ; HL = the name -> HL = routine, C = ROM.
 ;; with the mouth on them.
 ;;
 ;; The rules are the Naval Research Laboratory's, as shipped in 1985.
+    ifndef LSAI
 NRLLOAD         equ #2000       ; where the loader drops the file
 NRL             equ #0200       ; where it runs from
 NRLBASE         equ NRL + #0AE0 ; the engine's own addresses count from here
 CONVERT         equ NRLBASE + #02BA      ; HL = text, B = length
 NRLQUEUE        equ NRLBASE + #00D8      ; its output, redirected to us
 NRLLEN          equ 6016
+    endif
 SSA1            equ #FBEE       ; the Amstrad SSA-1's port, and LambdaSpeak's
 KL_TIME_PLEASE  equ #BD0D       ; DEHL = the 1/300 s tick count
 SCR_SET_BASE    equ #BC08       ; A = the page, #C0 or #40
@@ -718,6 +720,82 @@ me_go:
 ;; Copy the engine down to where it was relocated for, and point its
 ;; output at us.  Nothing of the driver is started - no init, no RSX, no
 ;; interrupt ticker; only the rules are wanted.
+    ifdef LSAI
+;; LambdaSpeak AI holds the rules itself -- the same Naval Research Laboratory
+;; rules, reimplemented from the 1976 report rather than taken from Amstrad's
+;; 1985 driver -- so there is nothing to load, relocate or hook. &E9 takes a
+;; line of text and hands the allophones back, and CONVERT asks for them with
+;; the same HL/B convention the engine had, so nothing downstream changes.
+;;
+;; That is what makes this build redistributable: the classic one carries 6016
+;; bytes of Amstrad's driver, which is not ours to pass on.
+installnrl:
+    ld hl,probetxt              ; does the card answer at all?
+    ld b,probelen
+    call CONVERT
+    push af
+    ld hl,phonbuf               ; the probe's allophones are not wanted
+    ld (saytail),hl
+    pop af
+    ret nc                      ; no answer: no prompt, as without the engine
+    ld a,1
+    ld (hooked),a
+    ret
+
+probetxt:  defb "A"
+probelen   equ $-probetxt
+
+;; HL = text, B = length.  Carry set if the card answered.
+;;
+;; Nothing here is timed. Reads before the reply is ready return the status
+;; byte and advance nothing, so polling for the sync costs only the reads it
+;; takes; &AA cannot be mistaken for a status, those being 3F, 7F, BF or FF in
+;; the SP0256 modes and 00, 40 or 80 in the emulation modes.
+CONVERT:
+    ld a,b
+    or a
+    scf                         ; nothing to say is not a failure
+    ret z
+    ld e,a
+    ld bc,SSA1                  ; BC is the port for every IN and OUT below,
+    ld a,#E9                    ; so the counters have to live elsewhere
+    out (c),a
+cv_send:
+    ld a,(hl)
+    inc hl
+    out (c),a
+    dec e
+    jr nz,cv_send
+    ld a,13                     ; the carriage return sets it going
+    out (c),a
+    ld de,0                     ; bounded, so a card that is not there -- a
+cv_wait:                        ; real SSA-1, say -- costs a quarter of a
+    in a,(c)                    ; second and not the machine
+    cp #AA
+    jr z,cv_count
+    dec de
+    ld a,d
+    or e
+    jr nz,cv_wait
+    or a                        ; carry clear: nobody answered
+    ret
+cv_count:
+    in a,(c)
+    ld e,a
+    or a
+    scf
+    ret z                       ; answered, with nothing to say
+cv_read:
+    in a,(c)
+    push de
+    call sayhook                ; the same buffer the 1985 engine fed
+    pop de
+    dec e
+    jr nz,cv_read
+    scf
+    ret
+
+    else
 installnrl:
     ld a,(NRLLOAD + #0BB8)      ; is it really loaded?  That offset is the
     cp #F5                      ; queue routine, and it starts with PUSH AF
@@ -735,8 +813,9 @@ installnrl:
     ld a,1
     ld (hooked),a
     ret
+    endif
 
-;; A = an allophone, straight out of the 1985 rules.  The caller retries
+;; A = an allophone, from the 1985 rules or from the card.  The caller retries
 ;; while carry is clear, so say yes.
 sayhook:
     push hl
@@ -1322,11 +1401,20 @@ abouttxt:
 
 anykeytxt: defb 13,13,"Press any key.",0
 nonrltxt:
+    ifdef LSAI
+    defb 13,13,"No LambdaSpeak AI answered, so there is "
+    defb "no prompt and only the sentence built in "
+    defb "here can be spoken.",13,13
+    defb "This build asks the card for its "
+    defb "letter-to-sound; it carries none itself.",13,13
+    defb "SPACE says it again.  Q quits.",0
+    else
     defb 13,13,"NRL.BIN was not loaded, so there is no "
     defb "prompt and only the sentence built in "
     defb "here can be spoken.",13,13
     defb "Start it with RUN",34,"VH - not HEAD.BIN.",13,13
     defb "SPACE says it again.  Q quits.",0
+    endif
 moretxt:   defb "...",0
 hint1:     defb "  (, . change it)",0
 hint2:     defb "ENTER speaks.  QUIT exits.",0

@@ -8,6 +8,13 @@
 ;; Built for LambdaSpeak AI's ROM emulation, which answers upper-ROM reads
 ;; out of flash, so this needs no ROM board.
 ;;
+;; Two builds. Without -DLSAI the ROM carries Amstrad's 1985 letter-to-sound
+;; engine and runs on any CPC with any SP0256 card -- and is not
+;; redistributable, because those 6016 bytes are not ours. With -DLSAI it
+;; carries none of them and asks the card instead, through &E9, which answers
+;; out of a clean implementation of the same Naval Research Laboratory rules.
+;; That build is 6 KB smaller and can be published.
+;;
 ;; Two things decide the shape of it.
 ;;
 ;; The head returns to BASIC rather than ending the program: start saves SP
@@ -45,8 +52,14 @@ NRL_ORG          equ #2000
 ;; would have copied short, silently, leaving the last 36 bytes of the program
 ;; as whatever was in RAM.
 
-;; Above the head's last byte (#9DD2) and below AMSDOS's workspace (~#A700).
-STUB_AT          equ #9E00
+;; The stub goes immediately after the head, wherever that now ends.
+;;
+;; It was #9E00, chosen as "above the head's last byte, #9DD2". The head has
+;; grown twice since -- a corrected credit line, then the port exchange that
+;; replaces the 1985 engine -- and at 7718 bytes it reaches #9E66, so the stub
+;; was being copied over its last hundred bytes and jumped to. Black screen.
+;; Deriving it cannot go stale; the assert below catches the day it collides
+;; with AMSDOS instead.
 
 ;; Measured, not looked up: #B906 is KL L ROM ENABLE, which fixes the order
 ;; of this block. The manuals' #BCCE is something else.
@@ -71,10 +84,12 @@ names:
     db 0                             ; and a zero ends the table
 
 vh:
+    ifndef LSAI
     ld hl,nrl_img                    ; the rules
     ld de,NRL_ORG
     ld bc,nrl_end-nrl_img
     ldir
+    endif
 
     ld hl,head_img                   ; and the head
     ld de,HEAD_ORG
@@ -91,19 +106,25 @@ vh:
 ;; jump above left that return address on the stack.
 ramstub:
     call KL_U_ROM_DISABLE            ; so the head can read the screen
-    call KL_L_ROM_DISABLE            ; and so it can read the rules at #2000
+    call KL_L_ROM_DISABLE            ; and, in the classic build, the rules
     call HEAD_ORG
     call KL_L_ROM_ENABLE
     call KL_U_ROM_ENABLE
     ret
 ramstub_end:
 
+    ifndef LSAI
 nrl_img:
     incbin "NRL.RAW"
 nrl_end:
+    endif
 head_img:
     incbin "HEAD.RAW"
 head_end:
+
+STUB_AT          equ HEAD_ORG + (head_end-head_img)
+AMSDOS_BASE      equ #A700                ; roughly where its workspace starts
+    assert STUB_AT + (ramstub_end-ramstub) < AMSDOS_BASE
 
 ;; A ROM that does not fit is worth hearing about at build time.
     assert $-#C000 <= #4000
