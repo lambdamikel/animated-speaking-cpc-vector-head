@@ -19,6 +19,18 @@ ordinary CPC ROM and a real ROM box will run it.
 | runs on | any CPC with any SP0256 card | LambdaSpeak AI |
 | redistributable | **no** | **yes** |
 
+### Which firmware `VHLSAI.ROM` needs
+
+`&E9` -- the command that hands allophones back -- was added to LambdaSpeak AI
+in October 2026, alongside `&E8`. A card running firmware older than that will
+not answer, and the ROM will say so and fall back to its built-in sentence
+rather than hanging. If `|VH` reports "No LambdaSpeak AI answered" on a card
+that is plugged in and working, the firmware is what to check first.
+
+The exchange itself has not yet been run against real hardware: it is verified
+on the host, and in MAME only against MAME's own SSA-1, which exercises the
+timeout rather than the reply. The classic `VH.ROM` has no such dependency.
+
 `VHLSAI.ROM` carries none of Amstrad's driver -- checked by searching it for
 323 distinctive 32-byte runs of the 1985 engine and finding none, where
 `VH.ROM` contains all of them. The rules it uses instead are the same Naval
