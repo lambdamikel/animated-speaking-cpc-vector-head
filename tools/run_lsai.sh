@@ -19,6 +19,17 @@ set -e
 cd "$(dirname "$0")"
 . ../src/tools.sh
 [ -f ../rom/VHLSAI.ROM ] || { echo "../rom/VHLSAI.ROM is missing -- run rom/build.sh first" >&2; exit 1; }
+
+# The stub reads the head's HOOKED, PHONBUF and SAYTAIL out of a symbol file,
+# so regenerate it for THIS build before looking at it. Those three addresses
+# used to be written into the stub and went stale twice -- they move whenever
+# anything earlier in head.asm changes size -- and a stale one reports that the
+# head did not hook the card, which is a true statement about nothing.
+need RASM rasm
+SYMS=$(cd ../src && pwd)/rasmoutput.sym
+(cd ../src && "$RASM" head.asm -DLSAI=1 -s >/dev/null)
+export SYMS
+
 OUT=$(./mame.sh cpc6128 -exp rom -rom1 ../rom/VHLSAI.ROM \
         -autoboot_script ../emu/lsai_stub.lua 2>&1 | grep "^=== ")
 echo "$OUT"
