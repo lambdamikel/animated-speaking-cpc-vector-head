@@ -478,6 +478,34 @@ cd tools
 | `spdtap.lua` | taps `&FBEE` to time the allophones going to the chip |
 | `words.lua` | reads the allophones back for `run_words.sh` |
 | `grab_blob.lua` | captures the relocated driver image |
+| `lsai_stub.lua` | stands in for a LambdaSpeak AI, so `VHLSAI.ROM`'s `&E9` exchange can be run |
+
+`tools/run_lsai.sh` is the one that reports PASS or FAIL on its own:
+
+```
+cd tools
+./run_lsai.sh
+=== PASS: the &E9 exchange works end to end
+```
+
+**A MAME Lua trap worth knowing, because it is completely silent.**
+`emu.add_machine_frame_notifier()`, `install_read_tap()` and
+`install_write_tap()` each return a subscription token, and *dropping it
+unsubscribes*. Written as a bare statement the callback fires normally until
+Lua's first garbage collection -- somewhere around frame 150 here -- and then
+stops, with no error and nothing on stdout. MAME keeps running forever and it
+looks exactly like a hang in the emulated machine. `lsai_stub.lua` had all
+three written that way and cost an afternoon. Keep every one of them in a
+global; `romtest.lua` always did (`N=emu.add_machine_frame_notifier(...)`),
+which is why it never showed the problem.
+
+While chasing that, two other things wasted time and are worth writing down.
+Piping MAME through `head` or `tail` hides everything when the run is killed
+on a timeout, because those buffer until EOF -- redirect to a file instead.
+And `os.clock()` in a MAME script is process CPU time, not wall clock, so it
+reports a throttled emulator as nearly idle; `emu.osd_ticks()` divided by
+`emu.osd_ticks_per_second()` is the one that answers "how fast is this
+actually going".
 
 A screen dump is raw MODE 2 bytes, and decoding one is four lines of Python:
 
@@ -541,6 +569,7 @@ tools/      mame.sh       headless MAME with the CPC roms, for the emu/ scripts
             reloc.asm     lets the driver relocate itself so the image can be captured
             run_words.sh  what do the rules make of this word? - how every
             nrlwords.asm    entry of the exception table was arrived at
+            run_lsai.sh   runs VHLSAI.ROM's &E9 exchange against a stub card
             mkwords.py
             NW.BAS
 
@@ -550,6 +579,7 @@ emu/        lay6.lua      dumps a screen page and decodes the layout
             film2.lua     captures a run frame by frame
             grab_blob.lua captures the relocated driver image
             words.lua     reads the allophones back for run_words.sh
+            lsai_stub.lua a LambdaSpeak AI, as far as the ROM can tell
             shots.lua     the screenshots in docs/
             meter.lua     the timings in the table above
 ```
