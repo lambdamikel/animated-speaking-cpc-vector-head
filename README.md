@@ -35,6 +35,7 @@ the 6502 so the Apple II knows what the card is about to say. See
 - [How it works](#how-it-works)
 - [Measurements](#measurements)
 - [Building it](#building-it)
+- [The LambdaSpeak AI build](#the-lambdaspeak-ai-build)
 - [Changing it](#changing-it)
 - [The toolchain](#the-toolchain)
 - [Repository layout](#repository-layout)
@@ -400,6 +401,40 @@ RASM=/opt/rasm IDSK=/opt/iDSK HXCFE=/opt/hxcfe CPCROMS=~/mame/roms ./dist.sh
 ```
 cd src && python3 preview.py ../docs/visemes.png
 ```
+
+## The LambdaSpeak AI build
+
+Everything above is the original head: it needs an **Amstrad SSA-1, or LambdaSpeak in
+SSA-1 mode**, and it carries Amstrad's 1985 driver for its letter-to-sound. That build
+is the point of this repository and nothing in this section changes it.
+
+There is a second build for **LambdaSpeak AI**, a card that holds the same Naval
+Research Laboratory rules itself — reimplemented from the 1976 report rather than taken
+from Amstrad's driver — and hands back allophones for a line of text. It is selected by
+one symbol and everything specific to it is listed here.
+
+```
+cd rom
+LSAI=1 ./build.sh     # VHLSAI.ROM -- asks the card for its rules
+./build.sh            # VH.ROM     -- carries Amstrad's 1985 engine
+```
+
+| What | Where |
+| --- | --- |
+| the build symbol | `LSAI`, set by `rom/build.sh`; `ifdef LSAI` in `src/head.asm` |
+| asking the card | `installnrl` / `CONVERT` — `&E9`, a line of text in, allophones out |
+| the intro line | "HELLO. I AM LAMBDASPEAK AI." instead of "...A VECTORIZED COMPUTER HED." |
+| the ROM | `rom/VHLSAI.ROM` |
+| the emulator stand-in | `emu/lsai_stub.lua`, driven by `tools/run_lsai.sh` |
+
+**It will not run on an SSA-1 or a LambdaSpeak III.** There is no engine in it to fall
+back on: if no card answers `&E9` there is no prompt, and it says the one sentence
+assembled into it. That is also what makes it the redistributable build — the classic
+one carries 6016 bytes of Amstrad's driver, which is not ours to pass on.
+
+**The classic build is unaffected, including its intro.** The two differ by exactly one
+string. Assembling the non-LSAI build from the source before and after the LSAI intro
+was added gives the identical binary, md5 `c341034c…`, 7799 bytes.
 
 ## Changing it
 
