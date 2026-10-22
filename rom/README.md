@@ -74,6 +74,29 @@ two payloads: `#8000` holds `C3`, the head's own `jp start`; `#2BB8` holds
 `F5`, the signature `installnrl` looks for; and the prompt comes up with the
 rules translating typed text into allophones.
 
+## The jump block, and why it has two entries
+
+The jump block at `#C006` and the name table are **parallel lists**, and entry
+0 is not a command: it is the initialisation the firmware's ROM walk calls
+once per reset, and name 0 is the ROM's own name. DKSPEECH.ROM's is `SET UP`
+and LS3.ROM's is `LS3 ROM` — both with a space in them, so they cannot be
+typed as `|NAME`. This one is `VECTOR HEAD`.
+
+With a single entry and a single name, `VH` was the ROM's name and `jp vh` was
+its init, so the head started itself at every reset — and `|VH` worked only
+because both went through the same slot. Mike asked for the autorun gone.
+
+Splitting it needs **both** halves. Adding `jp init` while leaving `VH` as name
+0 points name 0 at the init, so `|VH` does nothing at all; that was the first
+attempt and it was reverted. The init now does nothing but `scf : ret` — carry
+set means initialised, and `DE` is left alone because a ROM lowers it only to
+reserve RAM. The head needs a screen, a stack and a BASIC to return to, none
+of which exist during the ROM walk.
+
+`tools/run_lsai.sh` checks it in MAME: it counts the `&E9` exchanges that
+happen before `|VH` is typed, and that count must be zero. Running the
+pre-split ROM against that check reports four.
+
 ## Where the pieces go
 
 | | |

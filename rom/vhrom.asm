@@ -76,12 +76,38 @@ KL_L_ROM_DISABLE equ #B909
     db 0                             ; modification
     dw names
 
-    jp vh                            ; the one entry in the jump block
+    jp init                          ; entry 0: the ROM's initialisation
+    jp vh                            ; entry 1: |VH
 
+;; The jump block and the name table are PARALLEL lists, and entry 0 is not an
+;; RSX: it is the initialisation the firmware's ROM walk calls once per reset,
+;; and name 0 is the ROM's own name. With one entry and one name, "VH" was the
+;; ROM's name and `jp vh` was its init -- so the head started itself at boot,
+;; and `|VH` worked only because both went through the same slot.
+;;
+;; Splitting it needs BOTH halves. Adding `jp init` alone leaves name 0 = "VH"
+;; pointing at the init, so `|VH` does nothing at all -- which is exactly what
+;; happened on the first attempt, and why it was reverted.
+;;
+;; The ROM's name has a space in it, as DKSPEECH.ROM's "SET UP" and LS3.ROM's
+;; "LS3 ROM" both do, so that it cannot be typed as a command by accident.
 names:
+    db "VECTOR HEA"
+    db "D"+#80                       ; name 0: the ROM, not a command
     db "V"
-    db "H"+#80                       ; the last character carries bit 7
+    db "H"+#80                       ; name 1: the RSX. Last char carries bit 7
     db 0                             ; and a zero ends the table
+
+;; Called at boot, for every ROM in turn. It must do nothing: the head needs a
+;; screen, a stack and a BASIC to return to, none of which exist yet.
+;;
+;; Carry set means initialised, and DE is left alone -- it carries the top of
+;; free memory, and a ROM lowers it only to reserve RAM, which this one does
+;; not. DKSPEECH.ROM's init ends `ld a,#FF : add a,a` for the same reason; scf
+;; says it and keeps A.
+init:
+    scf
+    ret
 
 vh:
     ifndef LSAI
