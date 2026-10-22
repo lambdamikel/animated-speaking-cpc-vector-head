@@ -76,7 +76,25 @@ KL_L_ROM_DISABLE equ #B909
     db 0                             ; modification
     dw names
 
-    jp vh                            ; the one entry in the jump block
+;; The jump block has a FIXED layout and the first entry is not an RSX.
+;; #C006 is the ROM's initialisation routine, which the firmware calls for
+;; every background ROM during its boot ROM walk; the RSX entries follow it,
+;; one per name in the table below.
+;;
+;; This had `jp vh` as its only entry, so the head was sitting in the init
+;; slot: the CPC ran it at boot, which is why it started on its own, and
+;; |VH jumped to #C009 -- where the name table lives -- and executed
+;; "V", "H"+#80, 0 as code. It worked by the wrong door.
+    jp init                          ; #C006  the firmware calls this at boot
+    jp vh                            ; #C009  |VH
+
+;; Entered with DE at the lowest free byte and C as our ROM number. Carry set
+;; means "initialise me", which is what installs the RSX; DE unchanged means
+;; this ROM reserves no memory of its own, because everything it needs it
+;; copies into place when |VH is actually called.
+init:
+    scf
+    ret
 
 names:
     db "V"
