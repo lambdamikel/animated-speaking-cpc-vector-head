@@ -1419,7 +1419,11 @@ moretxt:   defb "...",0
 hint1:     defb "  (, . change it)",0
 hint2:     defb "ENTER speaks.  QUIT exits.",0
 
+    ifdef LSAI
+intro1:   defb "HELLO. I AM LAMBDASPEAK AI."
+    else
 intro1:   defb "HELLO. I AM A VECTORIZED COMPUTER HED."
+    endif
 intro1end:
 intro1len equ intro1end - intro1
 intro2:   defb "I LIV IN THE C P C."
