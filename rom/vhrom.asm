@@ -63,6 +63,7 @@ NRL_ORG          equ #2000
 
 ;; Measured, not looked up: #B906 is KL L ROM ENABLE, which fixes the order
 ;; of this block. The manuals' #BCCE is something else.
+TXT_OUTPUT       equ #BB5A            ; one character, in A
 KL_U_ROM_ENABLE  equ #B900
 KL_U_ROM_DISABLE equ #B903
 KL_L_ROM_ENABLE  equ #B906
@@ -98,16 +99,46 @@ names:
     db "H"+#80                       ; name 1: the RSX. Last char carries bit 7
     db 0                             ; and a zero ends the table
 
-;; Called at boot, for every ROM in turn. It must do nothing: the head needs a
-;; screen, a stack and a BASIC to return to, none of which exist yet.
+;; Called at boot, for every ROM in turn. It must not run the head: that needs
+;; a screen, a stack and a BASIC to return to, none of which exist yet.
+;;
+;; What it does do is say it is there, which is what every other ROM in the
+;; machine does and what the head could not do while its init WAS the head.
+;; DKSPEECH.ROM and LS3.ROM both announce themselves from here -- LS3's prints
+;; "LambdaSpeak III by TFM 2021 initialized" -- and without a line of its own
+;; a ROM that no longer starts by itself leaves no sign that it loaded at all.
 ;;
 ;; Carry set means initialised, and DE is left alone -- it carries the top of
 ;; free memory, and a ROM lowers it only to reserve RAM, which this one does
 ;; not. DKSPEECH.ROM's init ends `ld a,#FF : add a,a` for the same reason; scf
-;; says it and keeps A.
+;; says it and keeps A. HL and DE are pushed because TXT OUTPUT is a firmware
+;; call and makes no promises about either.
 init:
+    push de                          ; the firmware's memory pointer
+    push hl
+    ld hl,banner
+in_char:
+    ld a,(hl)
+    or a
+    jr z,in_done
+    inc hl
+    push hl
+    call TXT_OUTPUT
+    pop hl
+    jr in_char
+in_done:
+    pop hl
+    pop de
     scf
     ret
+
+banner:
+    ifdef LSAI
+    db "Vector Head ROM 1.0 - LambdaSpeak AI",13,10
+    else
+    db "Vector Head ROM 1.0 - SSA-1",13,10
+    endif
+    db "Type |VH to run it.",13,10,0
 
 vh:
     ifndef LSAI
