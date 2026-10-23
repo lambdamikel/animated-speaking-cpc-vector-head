@@ -136,7 +136,7 @@ banner:
     ifdef LSAI
     db "Vector Head ROM 1.0 - LambdaSpeak AI",13,10
     else
-    db "Vector Head ROM 1.0 - SSA-1",13,10
+    db "Vector Head ROM 1.0 - SSA-1/LambdaSpeak",13,10
     endif
     db "Type |VH to run it.",13,10,0
 
