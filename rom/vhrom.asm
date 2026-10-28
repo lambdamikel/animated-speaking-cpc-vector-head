@@ -135,6 +135,12 @@ in_done:
 banner:
     ifdef LSAI
     db "Vector Head ROM 1.0 - LambdaSpeak AI",13,10
+    ;; The head writes ALLOPHONES, so the card has to be in an SP0256 mode to
+    ;; make a sound of them. In DECtalk mode the same bytes are read as text
+    ;; and the mouth moves in silence -- which is exactly what it did the
+    ;; first time it was tried after an Amdrum session. The card powers up in
+    ;; SSA-1 mode, so a reset is enough; |SSA1 does it without one.
+    db "Needs SSA-1 mode: |SSA1, or just reset.",13,10
     else
     db "Vector Head ROM 1.0 - SSA-1/LambdaSpeak",13,10
     endif

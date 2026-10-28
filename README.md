@@ -427,6 +427,12 @@ LSAI=1 ./build.sh     # VHLSAI.ROM -- asks the card for its rules
 | the ROM | `rom/VHLSAI.ROM` |
 | the emulator stand-in | `emu/lsai_stub.lua`, driven by `tools/run_lsai.sh` |
 
+**It needs the card in an SP0256 mode.** The head writes allophones, and in
+DECtalk mode those same bytes are read as text -- the mouth moves and nothing
+is heard, which is what it does if you run it after `|DECTALK` or an Amdrum
+session. The card powers up in SSA-1 mode, so a reset is enough; the LSAI
+ROM's `|SSA1` does it without one. The ROM says so in its boot banner.
+
 **It will not run on an SSA-1 or a LambdaSpeak III.** There is no engine in it to fall
 back on: if no card answers `&E9` there is no prompt, and it says the one sentence
 assembled into it. That is also what makes it the redistributable build — the classic
