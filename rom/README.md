@@ -14,18 +14,21 @@ ordinary CPC ROM and a real ROM box will run it.
 
 |  | `VH.ROM` | `VHLSAI.ROM` |
 | --- | --- | --- |
-| letter-to-sound | Amstrad's 1985 engine, in the ROM | asked of the card, `&E9` |
+| letter-to-sound | Amstrad's 1985 engine, in the ROM | asked of the card, `&D0 &41 0` |
 | size used | 13,740 of 16,384 | **7,760** |
 | runs on | any CPC with any SP0256 card | LambdaSpeak AI |
 | redistributable | **no** | **yes** |
 
 ### Which firmware `VHLSAI.ROM` needs
 
-`&E9` -- the command that hands allophones back -- was added to LambdaSpeak AI
-in October 2026, alongside `&E8`. A card running firmware older than that will
-not answer, and the ROM will say so and fall back to its built-in sentence
-rather than hanging. If `|VH` reports "No LambdaSpeak AI answered" on a card
-that is plugged in and working, the firmware is what to check first.
+`&D0 &41 0` -- the command that hands allophones back -- is LambdaSpeak AI
+firmware from 2026-11-05 on. From October 2026 until then the same command was
+`&E9`, but LambdaSpeak 3 programs send `&E9` meaning "confirmations on", so the
+card gave that byte back and moved its own commands behind `&D0`. A card with
+older firmware will not answer this ROM, and the ROM will say so and fall back
+to its built-in sentence rather than hanging. If `|VH` reports "No LambdaSpeak
+AI answered" on a card that is plugged in and working, the firmware is what to
+check first.
 
 The exchange itself has not yet been run against real hardware: it is verified
 on the host, and in MAME only against MAME's own SSA-1, which exercises the
@@ -36,7 +39,7 @@ timeout rather than the reply. The classic `VH.ROM` has no such dependency.
 `VH.ROM` contains all of them. The rules it uses instead are the same Naval
 Research Laboratory rules, reimplemented on the card from the 1976 report.
 
-On hardware that does not answer `&E9` -- a real SSA-1, say -- the LambdaSpeak
+On hardware that does not answer `&D0 &41` -- a real SSA-1, say -- the LambdaSpeak
 build degrades rather than hanging: the probe times out after about a quarter
 of a second, and the head draws, speaks its built-in sentence and says there is
 no prompt, exactly as the classic build does without `NRL.BIN`. Verified in
@@ -93,7 +96,7 @@ set means initialised, and `DE` is left alone because a ROM lowers it only to
 reserve RAM. The head needs a screen, a stack and a BASIC to return to, none
 of which exist during the ROM walk.
 
-`tools/run_lsai.sh` checks it in MAME: it counts the `&E9` exchanges that
+`tools/run_lsai.sh` checks it in MAME: it counts the `&D0 &41` exchanges that
 happen before `|VH` is typed, and that count must be zero. Running the
 pre-split ROM against that check reports four.
 

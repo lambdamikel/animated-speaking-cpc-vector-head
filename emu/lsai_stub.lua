@@ -1,9 +1,9 @@
 -- A LambdaSpeak AI, as far as the vector head can tell.
 --
--- MAME has an SSA-1 but not this card, so the ROM's &E9 exchange -- the one
+-- MAME has an SSA-1 but not this card, so the ROM's &D0 &41 exchange -- the one
 -- that replaces Amstrad's letter-to-sound engine -- had no way of being run
 -- anywhere. This stands in for the card: it watches &FBEE, collects the text
--- after an &E9, and answers the way the firmware does, with a sync byte, a
+-- after &D0 &41 0, and answers the way the firmware does, with a sync byte, a
 -- count and that many allophones.
 --
 -- It deliberately does NOT implement the rules. Those are tested on the host
@@ -84,7 +84,11 @@ state, reply, asked = "idle", {}, 0
 TAPW = IO:install_write_tap(0xFBEE, 0xFBEE, "w", function(offset, data, mask)
   if (offset % 256) == PORT then
     if state == "idle" then
-      if data == 0xE9 then state = "text" end
+      if data == 0xD0 then state = "d0" end
+    elseif state == "d0" then         -- &D0 &41 0: "hand the allophones back"
+      state = (data == 0x41) and "arg" or "idle"
+    elseif state == "arg" then
+      state = "text"                  -- the argument byte, always 0
     elseif state == "text" then
       if data == 13 then              -- the carriage return sets it going
         reply = { SYNC, #ANSWER }
@@ -118,11 +122,11 @@ NOTIFY = emu.add_machine_frame_notifier(function()
     local hooked = PROG:read_u8(HOOKED)
     local tail   = PROG:read_u8(SAYTAIL) + PROG:read_u8(SAYTAIL + 1) * 256
     local n      = tail - PHONBUF
-    io.write(string.format("=== &E9 exchanges seen: %d, of them before |VH: %d\n",
+    io.write(string.format("=== &D0 &41 exchanges seen: %d, of them before |VH: %d\n",
                            asked, ASKED_BEFORE or -1))
     io.write(string.format("=== hooked = %d  (1 means the card answered)\n", hooked))
 
-    -- Diagnose in the order that tells the reader the most. "No &E9 arrived"
+    -- Diagnose in the order that tells the reader the most. "No request arrived"
     -- is the useful answer when the ROM is absent or never ran; a nonsense
     -- buffer length only means the addresses are wrong once the exchange has
     -- demonstrably happened. Either way n is clamped, so a wrong address
@@ -132,7 +136,7 @@ NOTIFY = emu.add_machine_frame_notifier(function()
       bad = string.format("the ROM ran the head by itself -- %d exchanges "
                           .. "before |VH was typed, so autorun is back",
                           ASKED_BEFORE)
-    elseif asked == 0 then  bad = "the ROM never sent an &E9"
+    elseif asked == 0 then  bad = "the ROM never sent &D0 &41"
     elseif hooked ~= 1 then bad = "the head did not hook the card's engine"
     elseif n < 0 or n > 64 then
       bad = string.format("say buffer length is %d -- HOOKED/PHONBUF/SAYTAIL "
@@ -162,7 +166,7 @@ NOTIFY = emu.add_machine_frame_notifier(function()
       end
     end
     if bad then io.write("=== FAIL: " .. bad .. "\n")
-    else        io.write("=== PASS: the &E9 exchange works end to end\n") end
+    else        io.write("=== PASS: the &D0 &41 exchange works end to end\n") end
     if os.getenv("DUMP") then
       local f = io.open(os.getenv("DUMP"), "wb")
       for i = 0, 16383 do f:write(string.char(PROG:read_u8(0xC000 + i))) end

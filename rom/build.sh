@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 need RASM rasm
 
 # LSAI=1 builds the redistributable ROM: no Amstrad engine, the card is asked
-# through &E9 instead. Anything else builds the classic one, which runs on any
+# through &D0 &41 instead. Anything else builds the classic one, which runs on any
 # CPC with any SP0256 card and carries the 1985 engine.
 if [ -n "$LSAI" ]; then
   OUT=VHLSAI.ROM; DEF="-DLSAI=1"; HEADSRC=HEAD-LSAI.BIN

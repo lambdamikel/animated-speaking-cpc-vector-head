@@ -422,7 +422,7 @@ LSAI=1 ./build.sh     # VHLSAI.ROM -- asks the card for its rules
 | What | Where |
 | --- | --- |
 | the build symbol | `LSAI`, set by `rom/build.sh`; `ifdef LSAI` in `src/head.asm` |
-| asking the card | `installnrl` / `CONVERT` — `&E9`, a line of text in, allophones out |
+| asking the card | `installnrl` / `CONVERT` — `&D0 &41 0`, a line of text in, allophones out |
 | the intro line | "HELLO. I AM LAMBDASPEAK AI." instead of "...A VECTORIZED COMPUTER HED." |
 | the ROM | `rom/VHLSAI.ROM` |
 | the emulator stand-in | `emu/lsai_stub.lua`, driven by `tools/run_lsai.sh` |
@@ -434,7 +434,7 @@ session. The card powers up in SSA-1 mode, so a reset is enough; the LSAI
 ROM's `|SSA1` does it without one. The ROM says so in its boot banner.
 
 **It will not run on an SSA-1 or a LambdaSpeak III.** There is no engine in it to fall
-back on: if no card answers `&E9` there is no prompt, and it says the one sentence
+back on: if no card answers `&D0 &41` there is no prompt, and it says the one sentence
 assembled into it. That is also what makes it the redistributable build — the classic
 one carries 6016 bytes of Amstrad's driver, which is not ours to pass on.
 
@@ -519,14 +519,14 @@ cd tools
 | `spdtap.lua` | taps `&FBEE` to time the allophones going to the chip |
 | `words.lua` | reads the allophones back for `run_words.sh` |
 | `grab_blob.lua` | captures the relocated driver image |
-| `lsai_stub.lua` | stands in for a LambdaSpeak AI, so `VHLSAI.ROM`'s `&E9` exchange can be run |
+| `lsai_stub.lua` | stands in for a LambdaSpeak AI, so `VHLSAI.ROM`'s `&D0 &41` exchange can be run |
 
 `tools/run_lsai.sh` is the one that reports PASS or FAIL on its own:
 
 ```
 cd tools
 ./run_lsai.sh
-=== PASS: the &E9 exchange works end to end
+=== PASS: the &D0 &41 exchange works end to end
 ```
 
 **A MAME Lua trap worth knowing, because it is completely silent.**
@@ -610,7 +610,7 @@ tools/      mame.sh       headless MAME with the CPC roms, for the emu/ scripts
             reloc.asm     lets the driver relocate itself so the image can be captured
             run_words.sh  what do the rules make of this word? - how every
             nrlwords.asm    entry of the exception table was arrived at
-            run_lsai.sh   runs VHLSAI.ROM's &E9 exchange against a stub card
+            run_lsai.sh   runs VHLSAI.ROM's &D0 &41 exchange against a stub card
             mkwords.py
             NW.BAS
 

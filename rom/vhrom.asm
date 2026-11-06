@@ -11,7 +11,7 @@
 ;; Two builds. Without -DLSAI the ROM carries Amstrad's 1985 letter-to-sound
 ;; engine and runs on any CPC with any SP0256 card -- and is not
 ;; redistributable, because those 6016 bytes are not ours. With -DLSAI it
-;; carries none of them and asks the card instead, through &E9, which answers
+;; carries none of them and asks the card instead, through &D0 &41, which answers
 ;; out of a clean implementation of the same Naval Research Laboratory rules.
 ;; That build is 6 KB smaller and can be published.
 ;;

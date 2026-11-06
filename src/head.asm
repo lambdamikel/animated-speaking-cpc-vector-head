@@ -723,9 +723,12 @@ me_go:
     ifdef LSAI
 ;; LambdaSpeak AI holds the rules itself -- the same Naval Research Laboratory
 ;; rules, reimplemented from the 1976 report rather than taken from Amstrad's
-;; 1985 driver -- so there is nothing to load, relocate or hook. &E9 takes a
-;; line of text and hands the allophones back, and CONVERT asks for them with
-;; the same HL/B convention the engine had, so nothing downstream changes.
+;; 1985 driver -- so there is nothing to load, relocate or hook. &D0 &41 0
+;; takes a line of text and hands the allophones back, and CONVERT asks for
+;; them with the same HL/B convention the engine had, so nothing downstream
+;; changes. (It was &E9 until 2026-11-05, which LambdaSpeak 3 programs send as
+;; "confirmations on"; the card gave LambdaSpeak 3 its bytes back and moved
+;; its own commands behind &D0.)
 ;;
 ;; That is what makes this build redistributable: the classic one carries 6016
 ;; bytes of Amstrad's driver, which is not ours to pass on.
@@ -758,7 +761,11 @@ CONVERT:
     ret z
     ld e,a
     ld bc,SSA1                  ; BC is the port for every IN and OUT below,
-    ld a,#E9                    ; so the counters have to live elsewhere
+    ld a,#D0                    ; so the counters have to live elsewhere
+    out (c),a
+    ld a,#41                    ; &D0 &41 0: text in, allophones back
+    out (c),a
+    xor a
     out (c),a
 cv_send:
     ld a,(hl)

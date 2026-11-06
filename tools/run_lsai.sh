@@ -1,14 +1,14 @@
 #!/bin/bash
-# Does the ROM's &E9 exchange work?
+# Does the ROM's &D0 &41 exchange work?
 #
 #     ./run_lsai.sh
-#     === PASS: the &E9 exchange works end to end
+#     === PASS: the &D0 &41 exchange works end to end
 #
 # VHLSAI.ROM has no letter-to-sound engine of its own -- that is the whole
 # point of it, since Amstrad's cannot be redistributed -- so it asks a
 # LambdaSpeak AI for allophones over &FBEE instead. MAME has an SSA-1 but not
 # that card, so emu/lsai_stub.lua stands in for one: it collects the text
-# after an &E9 and answers the way the firmware does, with a sync byte, a
+# after &D0 &41 0 and answers the way the firmware does, with a sync byte, a
 # count and that many allophones. The script then checks that exactly those
 # allophones reached the head's own buffer.
 #
